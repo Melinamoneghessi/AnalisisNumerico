@@ -199,7 +199,14 @@ namespace AnalisisNumericoWeb
             Panel grafico = new Panel();
 
             grafico.Size = new Size(135, 110);
-            grafico.Location = new Point(270, 20);
+            if (numeroUnidad == 2)
+{
+    grafico.Location = new Point(285, 20);
+}
+else
+{
+    grafico.Location = new Point(270, 20);
+}   
             grafico.BackColor = Color.Transparent;
             grafico.Cursor = Cursors.Hand;
 
@@ -243,17 +250,32 @@ namespace AnalisisNumericoWeb
 
             lblTema.Text = tema;
 
-            lblTema.Font = new Font(
-                "Segoe UI",
-                16,
-                FontStyle.Bold
-            );
+            // TAMAÑO DEL TÍTULO
+            if (numeroUnidad == 2)
+            {
+                lblTema.Font = new Font(
+                    "Segoe UI",
+                    14,
+                    FontStyle.Bold
+                );
+
+                lblTema.Size = new Size(260, 55);
+            }
+            else
+            {
+                lblTema.Font = new Font(
+                    "Segoe UI",
+                    16,
+                    FontStyle.Bold
+                );
+
+                lblTema.Size = new Size(240, 50);
+            }
 
             lblTema.ForeColor =
                 Color.FromArgb(70, 55, 65);
 
             lblTema.Location = new Point(25, 60);
-            lblTema.Size = new Size(240, 50);
             lblTema.Cursor = Cursors.Hand;
 
             tarjeta.Controls.Add(lblTema);
@@ -266,7 +288,7 @@ namespace AnalisisNumericoWeb
 
             lblDescripcion.Font = new Font(
                 "Segoe UI",
-                9
+                12
             );
 
             lblDescripcion.ForeColor = Color.Gray;
@@ -619,7 +641,7 @@ namespace AnalisisNumericoWeb
             // EJE X
             g.DrawLine(
                 lapiz,
-                10,
+                15,
                 baseY,
                 area.Width - 10,
                 baseY
