@@ -641,7 +641,7 @@ else
             // EJE X
             g.DrawLine(
                 lapiz,
-                15,
+                10,
                 baseY,
                 area.Width - 10,
                 baseY
@@ -701,12 +701,11 @@ else
         // POR AHORA SOLO MUESTRA QUÉ UNIDAD SE SELECCIONÓ
         private void AbrirUnidad(string unidad)
         {
-            MessageBox.Show(
-                "Seleccionaste " + unidad,
-                "Análisis Numérico",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information
-            );
+            if (unidad == "UNIDAD 1")
+            {
+                Unidad1 paginaUnidad1 = new Unidad1();
+                paginaUnidad1.ShowDialog();
+            }
         }
     }
 }
