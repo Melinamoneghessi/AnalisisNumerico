@@ -1,11 +1,27 @@
 ﻿using System;
 using System.Drawing;
+using System.Globalization;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using LogicaAnalisis;
+using Microsoft.Web.WebView2.WinForms;
 
 namespace AnalisisNumericoWeb
 {
     public partial class Unidad1 : Form
     {
+        private TextBox txtResultadoFuncion;
+        private TextBox txtResultadoMetodo;
+        private TextBox txtResultadoIteraciones;
+        private TextBox txtResultadoTolerancia;
+        private TextBox txtResultadoIntervalo;
+        private TextBox txtResultadoConverge;
+        private TextBox txtResultadoRaiz;
+        private TextBox txtResultadoError;
+        private DataGridView dgvIteraciones;
+        private WebView2 navegadorGeoGebra;
+
         public Unidad1()
         {
             InitializeComponent();
@@ -351,7 +367,7 @@ namespace AnalisisNumericoWeb
                 new Point(25, 80);
 
             areaGrafico.Size =
-                new Size(530, 450);
+                new Size(530, 300);
 
             areaGrafico.BackColor =
                 Color.White;
@@ -362,26 +378,30 @@ namespace AnalisisNumericoWeb
             panelGrafico.Controls.Add(areaGrafico);
 
 
-            // TEXTO TEMPORAL
+            navegadorGeoGebra = new WebView2();
+            navegadorGeoGebra.Dock = DockStyle.Fill;
 
-            Label lblGrafico = new Label();
+            areaGrafico.Controls.Add(navegadorGeoGebra);
+            InicializarGeoGebra();
 
-            lblGrafico.Text =
-                "El gráfico de la función\naparecerá aquí";
 
-            lblGrafico.Font =
-                new Font("Segoe UI", 14);
+            dgvIteraciones = new DataGridView();
 
-            lblGrafico.ForeColor =
-                Color.FromArgb(170, 130, 145);
+            dgvIteraciones.Location =
+                new Point(25, 395);
 
-            lblGrafico.TextAlign =
-                ContentAlignment.MiddleCenter;
+            dgvIteraciones.Size =
+                new Size(530, 145);
 
-            lblGrafico.Dock =
-                DockStyle.Fill;
+            dgvIteraciones.ReadOnly = true;
+            dgvIteraciones.AllowUserToAddRows = false;
+            dgvIteraciones.AllowUserToDeleteRows = false;
+            dgvIteraciones.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvIteraciones.BackgroundColor = Color.White;
+            dgvIteraciones.BorderStyle = BorderStyle.FixedSingle;
+            dgvIteraciones.RowHeadersVisible = false;
 
-            areaGrafico.Controls.Add(lblGrafico);
+            panelGrafico.Controls.Add(dgvIteraciones);
 
 
             // =========================
@@ -402,7 +422,7 @@ namespace AnalisisNumericoWeb
 
             // FUNCIÓN UTILIZADA
 
-            CrearResultado(
+            txtResultadoFuncion = CrearResultado(
                 panelResultados,
                 "Función utilizada",
                 "-",
@@ -412,7 +432,7 @@ namespace AnalisisNumericoWeb
 
             // MÉTODO
 
-            CrearResultado(
+            txtResultadoMetodo = CrearResultado(
                 panelResultados,
                 "Método utilizado",
                 "-",
@@ -422,7 +442,7 @@ namespace AnalisisNumericoWeb
 
             // ITERACIONES
 
-            CrearResultado(
+            txtResultadoIteraciones = CrearResultado(
                 panelResultados,
                 "Iteraciones",
                 "-",
@@ -432,7 +452,7 @@ namespace AnalisisNumericoWeb
 
             // TOLERANCIA
 
-            CrearResultado(
+            txtResultadoTolerancia = CrearResultado(
                 panelResultados,
                 "Tolerancia",
                 "-",
@@ -442,7 +462,7 @@ namespace AnalisisNumericoWeb
 
             // INTERVALO
 
-            CrearResultado(
+            txtResultadoIntervalo = CrearResultado(
                 panelResultados,
                 "Intervalo",
                 "-",
@@ -452,7 +472,7 @@ namespace AnalisisNumericoWeb
 
             // CONVERGENCIA
 
-            CrearResultado(
+            txtResultadoConverge = CrearResultado(
                 panelResultados,
                 "¿Converge?",
                 "-",
@@ -462,7 +482,7 @@ namespace AnalisisNumericoWeb
 
             // RAÍZ
 
-            CrearResultado(
+            txtResultadoRaiz = CrearResultado(
                 panelResultados,
                 "Raíz",
                 "-",
@@ -472,7 +492,7 @@ namespace AnalisisNumericoWeb
 
             // ERROR
 
-            CrearResultado(
+            txtResultadoError = CrearResultado(
                 panelResultados,
                 "Error",
                 "-",
@@ -506,16 +526,43 @@ namespace AnalisisNumericoWeb
             };
 
 
-            // POR AHORA EL BOTÓN NO CALCULA
-            btnCalcular.Click += (s, e) =>
+            btnCalcular.Click += async (s, e) =>
             {
-                MessageBox.Show(
-                    "La interfaz ya está lista.\n" +
-                    "Después conectaremos este botón con calculus.dll.",
-                    "Calcular",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information
-                );
+                try
+                {
+                    if (cmbMetodo.Text != "Bisección")
+                    {
+                        MessageBox.Show(
+                            "Por ahora está conectado el método de bisección.",
+                            "Método no disponible",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information
+                        );
+                        return;
+                    }
+
+                    MetodoBiseccion metodo = new MetodoBiseccion();
+
+                    ResultadoBiseccion resultado = metodo.Calcular(
+                        txtFuncion.Text,
+                        LeerDouble(txtXi.Text),
+                        LeerDouble(txtXd.Text),
+                        LeerDouble(txtTolerancia.Text),
+                        LeerEntero(txtIteraciones.Text)
+                    );
+
+                    MostrarResultado(resultado);
+                    await GraficarEnGeoGebra(resultado.Funcion, resultado.Raiz);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        ex.Message,
+                        "Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                }
             };
         }
 
@@ -634,7 +681,7 @@ namespace AnalisisNumericoWeb
         // CREA FILAS DE RESULTADOS
         // ==========================================
 
-        private void CrearResultado(
+        private TextBox CrearResultado(
             Panel panel,
             string nombre,
             string valor,
@@ -685,6 +732,141 @@ namespace AnalisisNumericoWeb
 
 
             y += 55;
+
+            return txtValor;
+        }
+
+
+
+        private double LeerDouble(string texto)
+        {
+            texto = texto.Trim().Replace(',', '.');
+            return double.Parse(texto, CultureInfo.InvariantCulture);
+        }
+
+
+
+        private int LeerEntero(string texto)
+        {
+            return int.Parse(texto.Trim(), CultureInfo.InvariantCulture);
+        }
+
+
+
+        private void MostrarResultado(ResultadoBiseccion resultado)
+        {
+            txtResultadoFuncion.Text = resultado.Funcion;
+            txtResultadoMetodo.Text = resultado.Metodo;
+            txtResultadoIteraciones.Text = resultado.IteracionesRealizadas.ToString();
+            txtResultadoTolerancia.Text = FormatearNumero(resultado.Tolerancia);
+            txtResultadoIntervalo.Text =
+                "[" +
+                FormatearNumero(resultado.XiInicial) +
+                " ; " +
+                FormatearNumero(resultado.XdInicial) +
+                "]";
+            txtResultadoConverge.Text = resultado.Converge ? "Si" : "No";
+            txtResultadoRaiz.Text = FormatearNumero(resultado.Raiz);
+            txtResultadoError.Text = FormatearNumero(resultado.Error);
+
+            dgvIteraciones.DataSource = null;
+            dgvIteraciones.DataSource = resultado.Iteraciones;
+        }
+
+
+
+        private string FormatearNumero(double numero)
+        {
+            return numero.ToString("0.##########", CultureInfo.InvariantCulture);
+        }
+
+
+
+        private async void InicializarGeoGebra()
+        {
+            try
+            {
+                await navegadorGeoGebra.EnsureCoreWebView2Async();
+                navegadorGeoGebra.NavigateToString(CrearHtmlGeoGebra());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "No se pudo cargar GeoGebra. Verifica que WebView2 Runtime este instalado.\n\n" + ex.Message,
+                    "GeoGebra",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+            }
+        }
+
+
+
+        private async Task GraficarEnGeoGebra(string funcion, double raiz)
+        {
+            if (navegadorGeoGebra.CoreWebView2 == null)
+            {
+                return;
+            }
+
+            string funcionJs = EscaparJavaScript(funcion);
+            string raizJs = FormatearNumero(raiz);
+            string script = "graficar('" + funcionJs + "', '" + raizJs + "');";
+
+            await navegadorGeoGebra.ExecuteScriptAsync(script);
+        }
+
+
+
+        private string EscaparJavaScript(string texto)
+        {
+            return texto
+                .Replace("\\", "\\\\")
+                .Replace("'", "\\'")
+                .Replace("\r", "")
+                .Replace("\n", "");
+        }
+
+
+
+        private string CrearHtmlGeoGebra()
+        {
+            StringBuilder html = new StringBuilder();
+
+            html.AppendLine("<!DOCTYPE html>");
+            html.AppendLine("<html>");
+            html.AppendLine("<head>");
+            html.AppendLine("<meta charset='utf-8'>");
+            html.AppendLine("<meta http-equiv='X-UA-Compatible' content='IE=edge'>");
+            html.AppendLine("<script src='https://www.geogebra.org/apps/deployggb.js'></script>");
+            html.AppendLine("</head>");
+            html.AppendLine("<body style='margin:0; overflow:hidden; background:white;'>");
+            html.AppendLine("<div id='ggb-element' style='width:100%; height:100%;'></div>");
+            html.AppendLine("<script>");
+            html.AppendLine("var params = {");
+            html.AppendLine("appName: 'graphing',");
+            html.AppendLine("width: 530,");
+            html.AppendLine("height: 300,");
+            html.AppendLine("showToolBar: false,");
+            html.AppendLine("showAlgebraInput: false,");
+            html.AppendLine("showMenuBar: false");
+            html.AppendLine("};");
+            html.AppendLine("var applet = new GGBApplet(params, true);");
+            html.AppendLine("window.addEventListener('load', function() { applet.inject('ggb-element'); });");
+            html.AppendLine("function graficar(funcion, raiz) {");
+            html.AppendLine("if (typeof ggbApplet === 'undefined') { return; }");
+            html.AppendLine("ggbApplet.reset();");
+            html.AppendLine("ggbApplet.evalCommand('f(x)=' + funcion);");
+            html.AppendLine("ggbApplet.evalCommand('R=(' + raiz + ',0)');");
+            html.AppendLine("ggbApplet.evalCommand('SetColor(f, 220, 100, 145)');");
+            html.AppendLine("ggbApplet.evalCommand('SetColor(R, 80, 65, 70)');");
+            html.AppendLine("ggbApplet.evalCommand('ShowLabel(R, true)');");
+            html.AppendLine("}");
+            html.AppendLine("</script>");
+            html.AppendLine("</body>");
+            html.AppendLine("</html>");
+
+            return html.ToString();
         }
     }
 }
