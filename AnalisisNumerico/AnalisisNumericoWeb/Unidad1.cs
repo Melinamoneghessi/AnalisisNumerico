@@ -21,6 +21,9 @@ namespace AnalisisNumericoWeb
         private TextBox txtResultadoError;
         private DataGridView dgvIteraciones;
         private WebView2 navegadorGeoGebra;
+        private bool geoGebraCargado;
+        private string funcionPendienteGeoGebra;
+        private double raizPendienteGeoGebra;
 
         public Unidad1()
         {
@@ -380,6 +383,18 @@ namespace AnalisisNumericoWeb
 
             navegadorGeoGebra = new WebView2();
             navegadorGeoGebra.Dock = DockStyle.Fill;
+            navegadorGeoGebra.NavigationCompleted += async (s, e) =>
+            {
+                geoGebraCargado = true;
+
+                if (!string.IsNullOrWhiteSpace(funcionPendienteGeoGebra))
+                {
+                    await GraficarEnGeoGebra(
+                        funcionPendienteGeoGebra,
+                        raizPendienteGeoGebra
+                    );
+                }
+            };
 
             areaGrafico.Controls.Add(navegadorGeoGebra);
             InicializarGeoGebra();
@@ -787,6 +802,7 @@ namespace AnalisisNumericoWeb
             try
             {
                 await navegadorGeoGebra.EnsureCoreWebView2Async();
+                geoGebraCargado = false;
                 navegadorGeoGebra.NavigateToString(CrearHtmlGeoGebra());
             }
             catch (Exception ex)
@@ -804,7 +820,15 @@ namespace AnalisisNumericoWeb
 
         private async Task GraficarEnGeoGebra(string funcion, double raiz)
         {
+            funcionPendienteGeoGebra = funcion;
+            raizPendienteGeoGebra = raiz;
+
             if (navegadorGeoGebra.CoreWebView2 == null)
+            {
+                await navegadorGeoGebra.EnsureCoreWebView2Async();
+            }
+
+            if (!geoGebraCargado)
             {
                 return;
             }
