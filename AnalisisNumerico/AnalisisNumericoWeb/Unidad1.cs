@@ -545,29 +545,51 @@ namespace AnalisisNumericoWeb
             {
                 try
                 {
-                    if (cmbMetodo.Text != "Bisección")
+                    string funcion = txtFuncion.Text;
+                    double xi = LeerDouble(txtXi.Text);
+                    double xd = LeerDouble(txtXd.Text);
+                    double tolerancia = LeerDouble(txtTolerancia.Text);
+                    int iteracionesMaximas = LeerEntero(txtIteraciones.Text);
+
+                    if (cmbMetodo.Text == "Bisección")
+                    {
+                        MetodoBiseccion metodo = new MetodoBiseccion();
+
+                        ResultadoBiseccion resultado = metodo.Calcular(
+                            funcion,
+                            xi,
+                            xd,
+                            tolerancia,
+                            iteracionesMaximas
+                        );
+
+                        MostrarResultado(resultado);
+                        await GraficarEnGeoGebra(resultado.Funcion, resultado.Raiz);
+                    }
+                    else if (cmbMetodo.Text == "Regla Falsa")
+                    {
+                        MetodoReglaFalsa metodo = new MetodoReglaFalsa();
+
+                        ResultadoReglaFalsa resultado = metodo.Calcular(
+                            funcion,
+                            xi,
+                            xd,
+                            tolerancia,
+                            iteracionesMaximas
+                        );
+
+                        MostrarResultado(resultado);
+                        await GraficarEnGeoGebra(resultado.Funcion, resultado.Raiz);
+                    }
+                    else
                     {
                         MessageBox.Show(
-                            "Por ahora está conectado el método de bisección.",
-                            "Método no disponible",
+                            "Ese metodo todavia no esta conectado.",
+                            "Metodo no disponible",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Information
                         );
-                        return;
                     }
-
-                    MetodoBiseccion metodo = new MetodoBiseccion();
-
-                    ResultadoBiseccion resultado = metodo.Calcular(
-                        txtFuncion.Text,
-                        LeerDouble(txtXi.Text),
-                        LeerDouble(txtXd.Text),
-                        LeerDouble(txtTolerancia.Text),
-                        LeerEntero(txtIteraciones.Text)
-                    );
-
-                    MostrarResultado(resultado);
-                    await GraficarEnGeoGebra(resultado.Funcion, resultado.Raiz);
                 }
                 catch (Exception ex)
                 {
@@ -769,6 +791,27 @@ namespace AnalisisNumericoWeb
 
 
         private void MostrarResultado(ResultadoBiseccion resultado)
+        {
+            txtResultadoFuncion.Text = resultado.Funcion;
+            txtResultadoMetodo.Text = resultado.Metodo;
+            txtResultadoIteraciones.Text = resultado.IteracionesRealizadas.ToString();
+            txtResultadoTolerancia.Text = FormatearNumero(resultado.Tolerancia);
+            txtResultadoIntervalo.Text =
+                "[" +
+                FormatearNumero(resultado.XiInicial) +
+                " ; " +
+                FormatearNumero(resultado.XdInicial) +
+                "]";
+            txtResultadoConverge.Text = resultado.Converge ? "Si" : "No";
+            txtResultadoRaiz.Text = FormatearNumero(resultado.Raiz);
+            txtResultadoError.Text = FormatearNumero(resultado.Error);
+
+            dgvIteraciones.DataSource = null;
+            dgvIteraciones.DataSource = resultado.Iteraciones;
+        }
+
+
+        private void MostrarResultado(ResultadoReglaFalsa resultado)
         {
             txtResultadoFuncion.Text = resultado.Funcion;
             txtResultadoMetodo.Text = resultado.Metodo;
