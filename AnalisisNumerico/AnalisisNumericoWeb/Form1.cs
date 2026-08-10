@@ -1,23 +1,56 @@
-using System;
+Ôªøusing System;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.WinForms;
 
 namespace AnalisisNumericoWeb
 {
     public partial class Form1 : Form
     {
+        private WebView2 precargaGeoGebra;
+
         public Form1()
         {
             InitializeComponent();
             CrearMenuPrincipal();
+            PrecargarGeoGebra();
+        }
+
+
+        // ARRANCA LA DESCARGA DE GEOGEBRA EN SEGUNDO PLANO MIENTRAS EL
+        // USUARIO ESTA EN EL MENU, PARA QUE UNIDAD1 LO ENCUENTRE EN CACHE
+        private async void PrecargarGeoGebra()
+        {
+            try
+            {
+                precargaGeoGebra = new WebView2();
+                precargaGeoGebra.Visible = false;
+                precargaGeoGebra.Size = new Size(0, 0);
+
+                this.Controls.Add(precargaGeoGebra);
+
+                CoreWebView2Environment entornoWebView =
+                    await GeoGebraWebView.ObtenerEntornoAsync();
+
+                await precargaGeoGebra.EnsureCoreWebView2Async(entornoWebView);
+
+                string rutaHtml = GeoGebraWebView.AsegurarHtmlEscrito();
+
+                precargaGeoGebra.Source = new Uri(rutaHtml);
+            }
+            catch
+            {
+                // Precarga best-effort: si falla, Unidad1 igual carga GeoGebra normalmente.
+            }
         }
 
 
         private void CrearMenuPrincipal()
         {
-            // CONFIGURACI”N GENERAL
-            this.Text = "An·lisis NumÈrico";
+            // CONFIGURACI√ìN GENERAL
+            this.Text = "An√°lisis Num√©rico";
             this.WindowState = FormWindowState.Maximized;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.FromArgb(255, 245, 248);
@@ -33,10 +66,10 @@ namespace AnalisisNumericoWeb
             this.Controls.Add(encabezado);
 
 
-            // TÕTULO
+            // T√çTULO
             Label titulo = new Label();
 
-            titulo.Text = "AN¡LISIS NUM…RICO";
+            titulo.Text = "AN√ÅLISIS NUM√âRICO";
 
             titulo.Font = new Font(
                 "Segoe UI",
@@ -50,10 +83,10 @@ namespace AnalisisNumericoWeb
             encabezado.Controls.Add(titulo);
 
 
-            // SUBTÕTULO
+            // SUBT√çTULO
             Label subtitulo = new Label();
 
-            subtitulo.Text = "Men˙ principal";
+            subtitulo.Text = "Men√∫ principal";
 
             subtitulo.Font = new Font(
                 "Segoe UI",
@@ -103,8 +136,8 @@ namespace AnalisisNumericoWeb
             // TARJETA UNIDAD 1
             CrearTarjeta(
                 "UNIDAD 1",
-                "RaÌces de funciones",
-                "MÈtodos para encontrar raÌces de ecuaciones.",
+                "Ra√≠ces de funciones",
+                "M√©todos para encontrar ra√≠ces de ecuaciones.",
                 new Point(10, 10),
                 Color.FromArgb(244, 170, 190),
                 panelTarjetas,
@@ -116,7 +149,7 @@ namespace AnalisisNumericoWeb
             CrearTarjeta(
                 "UNIDAD 2",
                 "Sistemas de ecuaciones",
-                "ResoluciÛn de sistemas lineales.",
+                "Resoluci√≥n de sistemas lineales.",
                 new Point(460, 10),
                 Color.FromArgb(235, 157, 185),
                 panelTarjetas,
@@ -128,7 +161,7 @@ namespace AnalisisNumericoWeb
             CrearTarjeta(
                 "UNIDAD 3",
                 "Ajuste de curvas",
-                "InterpolaciÛn y aproximaciÛn de funciones.",
+                "Interpolaci√≥n y aproximaci√≥n de funciones.",
                 new Point(10, 225),
                 Color.FromArgb(248, 185, 203),
                 panelTarjetas,
@@ -139,8 +172,8 @@ namespace AnalisisNumericoWeb
             // TARJETA UNIDAD 4
             CrearTarjeta(
                 "UNIDAD 4",
-                "IntegraciÛn numÈrica",
-                "MÈtodos numÈricos para calcular integrales.",
+                "Integraci√≥n num√©rica",
+                "M√©todos num√©ricos para calcular integrales.",
                 new Point(460, 225),
                 Color.FromArgb(229, 145, 177),
                 panelTarjetas,
@@ -195,7 +228,7 @@ namespace AnalisisNumericoWeb
             panelTarjetas.Controls.Add(tarjeta);
 
 
-            // PANEL PARA EL GR¡FICO
+            // PANEL PARA EL GR√ÅFICO
             Panel grafico = new Panel();
 
             grafico.Size = new Size(135, 110);
@@ -213,7 +246,7 @@ else
             tarjeta.Controls.Add(grafico);
 
 
-            // DIBUJAR GR¡FICO
+            // DIBUJAR GR√ÅFICO
             grafico.Paint += (s, e) =>
             {
                 DibujarGrafico(
@@ -250,7 +283,7 @@ else
 
             lblTema.Text = tema;
 
-            // TAMA—O DEL TÕTULO
+            // TAMA√ëO DEL T√çTULO
             if (numeroUnidad == 2)
             {
                 lblTema.Font = new Font(
@@ -281,7 +314,7 @@ else
             tarjeta.Controls.Add(lblTema);
 
 
-            // DESCRIPCI”N
+            // DESCRIPCI√ìN
             Label lblDescripcion = new Label();
 
             lblDescripcion.Text = descripcion;
@@ -405,7 +438,7 @@ else
 
 
 
-        // DECIDE QU… GR¡FICO DIBUJAR
+        // DECIDE QU√â GR√ÅFICO DIBUJAR
         private void DibujarGrafico(
             Graphics g,
             int unidad,
@@ -439,7 +472,7 @@ else
 
 
 
-        // GR¡FICO UNIDAD 1
+        // GR√ÅFICO UNIDAD 1
         private void DibujarRaices(
             Graphics g,
             Pen lapiz,
@@ -488,7 +521,7 @@ else
             );
 
 
-            // RAÕCES
+            // RA√çCES
             using (Brush rosa =
                 new SolidBrush(
                     Color.FromArgb(220, 100, 145)))
@@ -514,7 +547,7 @@ else
 
 
 
-        // GR¡FICO UNIDAD 2
+        // GR√ÅFICO UNIDAD 2
         private void DibujarSistema(
             Graphics g,
             Pen lapiz,
@@ -555,7 +588,7 @@ else
 
 
                     g.DrawString(
-                        "◊",
+                        "√ó",
                         new Font(
                             "Segoe UI",
                             13,
@@ -581,13 +614,13 @@ else
 
 
 
-        // GR¡FICO UNIDAD 3
+        // GR√ÅFICO UNIDAD 3
         private void DibujarAjuste(
             Graphics g,
             Pen lapiz,
             Rectangle area)
         {
-            // LÕNEA DE AJUSTE
+            // L√çNEA DE AJUSTE
             g.DrawLine(
                 lapiz,
                 15,
@@ -629,7 +662,7 @@ else
 
 
 
-        // GR¡FICO UNIDAD 4
+        // GR√ÅFICO UNIDAD 4
         private void DibujarIntegracion(
             Graphics g,
             Pen lapiz,
@@ -677,7 +710,7 @@ else
             );
 
 
-            // LÕNEAS QUE SIMULAN EL ¡REA DE INTEGRACI”N
+            // L√çNEAS QUE SIMULAN EL √ÅREA DE INTEGRACI√ìN
             using (Pen rosa =
                 new Pen(
                     Color.FromArgb(220, 120, 155),
@@ -698,7 +731,7 @@ else
 
 
 
-        // POR AHORA SOLO MUESTRA QU… UNIDAD SE SELECCION”
+        // POR AHORA SOLO MUESTRA QU√â UNIDAD SE SELECCION√ì
         private void AbrirUnidad(string unidad)
         {
             if (unidad == "UNIDAD 1")
