@@ -67,8 +67,8 @@ namespace AnalisisNumericoWeb
             html.AppendLine("<script src='https://cdn.geogebra.org/apps/deployggb.js'></script>");
             html.AppendLine("</head>");
             html.AppendLine("<body style='margin:0; overflow:hidden; background:white; font-family:Segoe UI, Arial;'>");
-            html.AppendLine("<div style='position:relative; width:530px; height:300px;'>");
-            html.AppendLine("<div id='ggb-element' style='width:530px; height:300px;'></div>");
+            html.AppendLine("<div style='position:relative; width:530px; height:300px; overflow:hidden;'>");
+            html.AppendLine("<div id='ggb-element' style='position:absolute; left:-165px; top:0; width:695px; height:300px;'></div>");
             html.AppendLine("<div id='estado' style='position:absolute; left:0; top:0; width:530px; height:300px; display:flex; align-items:center; justify-content:center; color:#aa8291; font-size:18px; background:white;'>Cargando GeoGebra...</div>");
             html.AppendLine("</div>");
             html.AppendLine("<script>");
@@ -88,7 +88,7 @@ namespace AnalisisNumericoWeb
             html.AppendLine("var params = {");
             html.AppendLine("id: 'ggbApplet',");
             html.AppendLine("appName: 'graphing',");
-            html.AppendLine("width: 530,");
+            html.AppendLine("width: 695,");
             html.AppendLine("height: 300,");
             html.AppendLine("showToolBar: false,");
             html.AppendLine("showAlgebraInput: false,");
@@ -108,12 +108,13 @@ namespace AnalisisNumericoWeb
             html.AppendLine("ggbApplet.setGridVisible(true);");
             html.AppendLine("ggbApplet.evalCommand('f(x)=' + funcion);");
             html.AppendLine("ggbApplet.evalCommand('R=(' + raiz + ',0)');");
-            html.AppendLine("ggbApplet.evalCommand('SetVisibleInView(f, 1, true)');");
-            html.AppendLine("ggbApplet.evalCommand('SetVisibleInView(R, 1, true)');");
-            html.AppendLine("ggbApplet.evalCommand('SetColor(f, 225, 120, 160)');");
-            html.AppendLine("ggbApplet.evalCommand('SetColor(R, 80, 65, 70)');");
+            html.AppendLine("ggbApplet.setVisible('f', true);");
+            html.AppendLine("ggbApplet.setVisible('R', true);");
+            html.AppendLine("ggbApplet.setColor('f', 225, 120, 160);");
+            html.AppendLine("ggbApplet.setLineThickness('f', 5);");
+            html.AppendLine("ggbApplet.setColor('R', 80, 65, 70);");
             html.AppendLine("ggbApplet.evalCommand('ShowLabel(R, true)');");
-            html.AppendLine("ggbApplet.evalCommand('SetPointSize(R, 5)');");
+            html.AppendLine("ggbApplet.setPointSize('R', 6);");
             html.AppendLine("ggbApplet.setCoordSystem(-3.5, 3.5, -3.5, 3.5);");
             html.AppendLine("}");
             html.AppendLine("</script>");
