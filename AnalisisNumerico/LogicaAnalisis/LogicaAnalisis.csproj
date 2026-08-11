@@ -66,11 +66,14 @@
     <Compile Include="Class1.cs" />
     <Compile Include="EvaluadorFuncion.cs" />
     <Compile Include="IteracionBiseccion.cs" />
+    <Compile Include="IteracionNewtonRaphson.cs" />
     <Compile Include="IteracionReglaFalsa.cs" />
     <Compile Include="MetodoBiseccion.cs" />
+    <Compile Include="MetodoNewtonRaphson.cs" />
     <Compile Include="MetodoReglaFalsa.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResultadoBiseccion.cs" />
+    <Compile Include="ResultadoNewtonRaphson.cs" />
     <Compile Include="ResultadoReglaFalsa.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

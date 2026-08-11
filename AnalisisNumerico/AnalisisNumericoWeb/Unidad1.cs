@@ -316,6 +316,31 @@ namespace AnalisisNumericoWeb
             txtXd.Text = "2";
 
             panelDatos.Controls.Add(txtXd);
+            cmbMetodo.SelectedIndexChanged += (s, e) =>
+            {
+                if (cmbMetodo.Text == "Newton-Raphson")
+                {
+                    lblIntervalo.Text = "Valor inicial";
+
+                    lblXi.Text = "X0";
+
+                    lblXd.Visible = false;
+                    txtXd.Visible = false;
+
+                    txtXi.Size = new Size(310, 38);
+                }
+                else
+                {
+                    lblIntervalo.Text = "Intervalo";
+
+                    lblXi.Text = "Xi";
+
+                    lblXd.Visible = true;
+                    txtXd.Visible = true;
+
+                    txtXi.Size = new Size(145, 38);
+                }
+            };
 
 
             // BOTÓN CALCULAR
@@ -581,6 +606,28 @@ namespace AnalisisNumericoWeb
                         MostrarResultado(resultado);
                         await GraficarEnGeoGebra(resultado.Funcion, resultado.Raiz);
                     }
+                    else if (cmbMetodo.Text == "Newton-Raphson")
+                    {
+                        double x0 = LeerDouble(txtXi.Text);
+
+                        MetodoNewtonRaphson metodo =
+                            new MetodoNewtonRaphson();
+
+                        ResultadoNewtonRaphson resultado =
+                            metodo.Calcular(
+                                funcion,
+                                x0,
+                                tolerancia,
+                                iteracionesMaximas
+                            );
+
+                        MostrarResultado(resultado);
+
+                        await GraficarEnGeoGebra(
+                            resultado.Funcion,
+                            resultado.Raiz
+                        );
+                    }
                     else
                     {
                         MessageBox.Show(
@@ -831,6 +878,37 @@ namespace AnalisisNumericoWeb
             dgvIteraciones.DataSource = resultado.Iteraciones;
         }
 
+        private void MostrarResultado(
+    ResultadoNewtonRaphson resultado)
+        {
+            txtResultadoFuncion.Text =
+                resultado.Funcion;
+
+            txtResultadoMetodo.Text =
+                resultado.Metodo;
+
+            txtResultadoIteraciones.Text =
+                resultado.IteracionesRealizadas.ToString();
+
+            txtResultadoTolerancia.Text =
+                FormatearNumero(resultado.Tolerancia);
+
+            txtResultadoIntervalo.Text =
+                FormatearNumero(resultado.X0Inicial);
+
+            txtResultadoConverge.Text =
+                resultado.Converge ? "Si" : "No";
+
+            txtResultadoRaiz.Text =
+                FormatearNumero(resultado.Raiz);
+
+            txtResultadoError.Text =
+                FormatearNumero(resultado.Error);
+
+            dgvIteraciones.DataSource = null;
+            dgvIteraciones.DataSource =
+                resultado.Iteraciones;
+        }
 
 
         private string FormatearNumero(double numero)
