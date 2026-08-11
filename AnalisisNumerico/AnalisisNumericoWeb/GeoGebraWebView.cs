@@ -68,7 +68,7 @@ namespace AnalisisNumericoWeb
             html.AppendLine("</head>");
             html.AppendLine("<body style='margin:0; overflow:hidden; background:white; font-family:Segoe UI, Arial;'>");
             html.AppendLine("<div style='position:relative; width:530px; height:300px; overflow:hidden;'>");
-            html.AppendLine("<div id='ggb-element' style='position:absolute; left:-165px; top:0; width:695px; height:300px;'></div>");
+            html.AppendLine("<div id='ggb-element' style='position:absolute; left:0; top:0; width:530px; height:300px;'></div>");
             html.AppendLine("<div id='estado' style='position:absolute; left:0; top:0; width:530px; height:300px; display:flex; align-items:center; justify-content:center; color:#aa8291; font-size:18px; background:white;'>Cargando GeoGebra...</div>");
             html.AppendLine("</div>");
             html.AppendLine("<script>");
@@ -88,7 +88,7 @@ namespace AnalisisNumericoWeb
             html.AppendLine("var params = {");
             html.AppendLine("id: 'ggbApplet',");
             html.AppendLine("appName: 'graphing',");
-            html.AppendLine("width: 695,");
+            html.AppendLine("width: 530,");
             html.AppendLine("height: 300,");
             html.AppendLine("showToolBar: false,");
             html.AppendLine("showAlgebraInput: false,");
