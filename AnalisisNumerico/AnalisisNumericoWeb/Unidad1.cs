@@ -628,6 +628,21 @@ namespace AnalisisNumericoWeb
                             resultado.Raiz
                         );
                     }
+                    else if (cmbMetodo.Text == "Secante")
+                    {
+                        MetodoSecante metodo = new MetodoSecante();
+
+                        ResultadoSecante resultado = metodo.Calcular(
+                            funcion,
+                            xi,
+                            xd,
+                            tolerancia,
+                            iteracionesMaximas
+                        );
+
+                        MostrarResultado(resultado);
+                        await GraficarEnGeoGebra(resultado.Funcion, resultado.Raiz);
+                    }
                     else
                     {
                         MessageBox.Show(
@@ -908,6 +923,26 @@ namespace AnalisisNumericoWeb
             dgvIteraciones.DataSource = null;
             dgvIteraciones.DataSource =
                 resultado.Iteraciones;
+        }
+
+        private void MostrarResultado(ResultadoSecante resultado)
+        {
+            txtResultadoFuncion.Text = resultado.Funcion;
+            txtResultadoMetodo.Text = resultado.Metodo;
+            txtResultadoIteraciones.Text = resultado.IteracionesRealizadas.ToString();
+            txtResultadoTolerancia.Text = FormatearNumero(resultado.Tolerancia);
+            txtResultadoIntervalo.Text =
+                "[" +
+                FormatearNumero(resultado.XiInicial) +
+                " ; " +
+                FormatearNumero(resultado.XdInicial) +
+                "]";
+            txtResultadoConverge.Text = resultado.Converge ? "Si" : "No";
+            txtResultadoRaiz.Text = FormatearNumero(resultado.Raiz);
+            txtResultadoError.Text = FormatearNumero(resultado.Error);
+
+            dgvIteraciones.DataSource = null;
+            dgvIteraciones.DataSource = resultado.Iteraciones;
         }
 
 
