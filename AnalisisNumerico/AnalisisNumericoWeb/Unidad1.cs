@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Globalization;
 using System.Threading.Tasks;
@@ -870,6 +870,7 @@ namespace AnalisisNumericoWeb
 
             dgvIteraciones.DataSource = null;
             dgvIteraciones.DataSource = resultado.Iteraciones;
+            MostrarAvisoSiHaceFalta(resultado.Converge, resultado.Mensaje);
         }
 
 
@@ -891,6 +892,7 @@ namespace AnalisisNumericoWeb
 
             dgvIteraciones.DataSource = null;
             dgvIteraciones.DataSource = resultado.Iteraciones;
+            MostrarAvisoSiHaceFalta(resultado.Converge, resultado.Mensaje);
         }
 
         private void MostrarResultado(
@@ -923,6 +925,7 @@ namespace AnalisisNumericoWeb
             dgvIteraciones.DataSource = null;
             dgvIteraciones.DataSource =
                 resultado.Iteraciones;
+            MostrarAvisoSiHaceFalta(resultado.Converge, resultado.Mensaje);
         }
 
         private void MostrarResultado(ResultadoSecante resultado)
@@ -943,12 +946,30 @@ namespace AnalisisNumericoWeb
 
             dgvIteraciones.DataSource = null;
             dgvIteraciones.DataSource = resultado.Iteraciones;
+            MostrarAvisoSiHaceFalta(resultado.Converge, resultado.Mensaje);
         }
 
 
         private string FormatearNumero(double numero)
         {
             return numero.ToString("0.##########", CultureInfo.InvariantCulture);
+        }
+
+
+
+        private void MostrarAvisoSiHaceFalta(bool converge, string mensaje)
+        {
+            if (converge || string.IsNullOrWhiteSpace(mensaje))
+            {
+                return;
+            }
+
+            MessageBox.Show(
+                mensaje,
+                "Aviso del método",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning
+            );
         }
 
 
@@ -1016,3 +1037,4 @@ namespace AnalisisNumericoWeb
 
     }
 }
+

@@ -111,7 +111,16 @@ namespace LogicaAnalisis
                 {
                     resultado.Converge = false;
                     resultado.Mensaje =
-                        "El metodo diverge. La derivada es cero o muy pequena.";
+                        "No se puede aplicar Newton-Raphson porque la derivada es cero o muy pequena. El metodo necesita dividir por la derivada para calcular la siguiente aproximacion.";
+
+                    break;
+                }
+
+                if (Math.Abs(derivada) > 10000)
+                {
+                    resultado.Converge = false;
+                    resultado.Mensaje =
+                        "Newton-Raphson presenta inconvenientes porque la derivada en el punto inicial es demasiado grande o no esta bien definida. El metodo puede quedar detenido cerca del valor inicial y no llegar a la raiz real.";
 
                     break;
                 }
