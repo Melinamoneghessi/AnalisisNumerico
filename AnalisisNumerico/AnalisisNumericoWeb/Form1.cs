@@ -739,6 +739,12 @@ else
                 Unidad1 paginaUnidad1 = new Unidad1();
                 paginaUnidad1.ShowDialog();
             }
+            else if (unidad == "UNIDAD 2")
+            {
+                global::AnalisisNumericoWeb.Unidad2.Unidad2 paginaUnidad2 =
+                    new global::AnalisisNumericoWeb.Unidad2.Unidad2();
+                paginaUnidad2.ShowDialog();
+            }
         }
     }
 }

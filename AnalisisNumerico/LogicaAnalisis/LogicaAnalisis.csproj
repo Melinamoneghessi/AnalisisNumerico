@@ -63,21 +63,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
-    <Compile Include="EvaluadorFuncion.cs" />
-    <Compile Include="IteracionBiseccion.cs" />
-    <Compile Include="IteracionNewtonRaphson.cs" />
-    <Compile Include="IteracionReglaFalsa.cs" />
-    <Compile Include="IteracionSecante.cs" />
-    <Compile Include="MetodoBiseccion.cs" />
-    <Compile Include="MetodoNewtonRaphson.cs" />
-    <Compile Include="MetodoReglaFalsa.cs" />
-    <Compile Include="MetodoSecante.cs" />
+    <Compile Include="Unidad1\EvaluadorFuncion.cs" />
+    <Compile Include="Unidad1\IteracionBiseccion.cs" />
+    <Compile Include="Unidad1\IteracionNewtonRaphson.cs" />
+    <Compile Include="Unidad1\IteracionReglaFalsa.cs" />
+    <Compile Include="Unidad1\IteracionSecante.cs" />
+    <Compile Include="Unidad1\MetodoBiseccion.cs" />
+    <Compile Include="Unidad1\MetodoNewtonRaphson.cs" />
+    <Compile Include="Unidad1\MetodoReglaFalsa.cs" />
+    <Compile Include="Unidad1\MetodoSecante.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ResultadoBiseccion.cs" />
-    <Compile Include="ResultadoNewtonRaphson.cs" />
-    <Compile Include="ResultadoReglaFalsa.cs" />
-    <Compile Include="ResultadoSecante.cs" />
+    <Compile Include="Unidad1\ResultadoBiseccion.cs" />
+    <Compile Include="Unidad1\ResultadoNewtonRaphson.cs" />
+    <Compile Include="Unidad1\ResultadoReglaFalsa.cs" />
+    <Compile Include="Unidad1\ResultadoSecante.cs" />
+    <Compile Include="Unidad2\IteracionGaussJordan.cs" />
+    <Compile Include="Unidad2\MetodoGaussJordan.cs" />
+    <Compile Include="Unidad2\ResultadoGaussJordan.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
