@@ -571,13 +571,21 @@ namespace AnalisisNumericoWeb
                 try
                 {
                     string funcion = txtFuncion.Text;
-                    double xi = LeerDouble(txtXi.Text);
-                    double xd = LeerDouble(txtXd.Text);
-                    double tolerancia = LeerDouble(txtTolerancia.Text);
-                    int iteracionesMaximas = LeerEntero(txtIteraciones.Text);
+                    double tolerancia = LeerDouble(
+                        txtTolerancia.Text,
+                        "Tolerancia"
+                    );
+
+                    int iteracionesMaximas = LeerEntero(
+                        txtIteraciones.Text,
+                        "Iteraciones maximas"
+                    );
 
                     if (cmbMetodo.Text == "Bisección")
                     {
+                        double xi = LeerDouble(txtXi.Text, "Xi");
+                        double xd = LeerDouble(txtXd.Text, "Xd");
+
                         MetodoBiseccion metodo = new MetodoBiseccion();
 
                         ResultadoBiseccion resultado = metodo.Calcular(
@@ -593,6 +601,9 @@ namespace AnalisisNumericoWeb
                     }
                     else if (cmbMetodo.Text == "Regla Falsa")
                     {
+                        double xi = LeerDouble(txtXi.Text, "Xi");
+                        double xd = LeerDouble(txtXd.Text, "Xd");
+
                         MetodoReglaFalsa metodo = new MetodoReglaFalsa();
 
                         ResultadoReglaFalsa resultado = metodo.Calcular(
@@ -608,7 +619,7 @@ namespace AnalisisNumericoWeb
                     }
                     else if (cmbMetodo.Text == "Newton-Raphson")
                     {
-                        double x0 = LeerDouble(txtXi.Text);
+                        double x0 = LeerDouble(txtXi.Text, "X0");
 
                         MetodoNewtonRaphson metodo =
                             new MetodoNewtonRaphson();
@@ -630,6 +641,9 @@ namespace AnalisisNumericoWeb
                     }
                     else if (cmbMetodo.Text == "Secante")
                     {
+                        double xi = LeerDouble(txtXi.Text, "X0");
+                        double xd = LeerDouble(txtXd.Text, "X1");
+
                         MetodoSecante metodo = new MetodoSecante();
 
                         ResultadoSecante resultado = metodo.Calcular(
@@ -837,17 +851,67 @@ namespace AnalisisNumericoWeb
 
 
 
-        private double LeerDouble(string texto)
+        private double LeerDouble(string texto, string nombreCampo)
         {
             texto = texto.Trim().Replace(',', '.');
-            return double.Parse(texto, CultureInfo.InvariantCulture);
+
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                throw new ArgumentException(
+                    "Debe ingresar un valor en el campo " + nombreCampo + "."
+                );
+            }
+
+            double valor;
+
+            if (!double.TryParse(
+                texto,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out valor))
+            {
+                throw new ArgumentException(
+                    "El campo " + nombreCampo + " debe contener un numero valido. Ejemplo: 2.5"
+                );
+            }
+
+            if (double.IsNaN(valor) || double.IsInfinity(valor))
+            {
+                throw new ArgumentException(
+                    "El campo " + nombreCampo + " no puede ser infinito ni indefinido."
+                );
+            }
+
+            return valor;
         }
 
 
 
-        private int LeerEntero(string texto)
+        private int LeerEntero(string texto, string nombreCampo)
         {
-            return int.Parse(texto.Trim(), CultureInfo.InvariantCulture);
+            texto = texto.Trim();
+
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                throw new ArgumentException(
+                    "Debe ingresar un valor en el campo " + nombreCampo + "."
+                );
+            }
+
+            int valor;
+
+            if (!int.TryParse(
+                texto,
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out valor))
+            {
+                throw new ArgumentException(
+                    "El campo " + nombreCampo + " debe contener un numero entero valido. Ejemplo: 100"
+                );
+            }
+
+            return valor;
         }
 
 
