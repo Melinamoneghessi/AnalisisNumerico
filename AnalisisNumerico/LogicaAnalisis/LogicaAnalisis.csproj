@@ -78,8 +78,11 @@
     <Compile Include="Unidad1\ResultadoReglaFalsa.cs" />
     <Compile Include="Unidad1\ResultadoSecante.cs" />
     <Compile Include="Unidad2\IteracionGaussJordan.cs" />
+    <Compile Include="Unidad2\IteracionGaussSeidel.cs" />
     <Compile Include="Unidad2\MetodoGaussJordan.cs" />
+    <Compile Include="Unidad2\MetodoGaussSeidel.cs" />
     <Compile Include="Unidad2\ResultadoGaussJordan.cs" />
+    <Compile Include="Unidad2\ResultadoGaussSeidel.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

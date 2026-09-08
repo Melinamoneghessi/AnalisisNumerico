@@ -106,7 +106,9 @@ namespace AnalisisNumericoWeb.Unidad2
             cmbMetodo.Font = new Font("Segoe UI", 10);
             cmbMetodo.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbMetodo.Items.Add("Gauss-Jordan");
+            cmbMetodo.Items.Add("Gauss-Seidel");
             cmbMetodo.SelectedIndex = 0;
+            cmbMetodo.SelectedIndexChanged += (s, e) => LimpiarResultados();
             panelDatos.Controls.Add(cmbMetodo);
 
             Label lblEjemplos = CrearLabel("Ejemplo", new Point(355, 82));
@@ -305,9 +307,18 @@ namespace AnalisisNumericoWeb.Unidad2
         {
             try
             {
-                MetodoGaussJordan metodo = new MetodoGaussJordan();
-                ResultadoGaussJordan resultado = metodo.Calcular(LeerMatriz());
-                MostrarResultado(resultado);
+                if (cmbMetodo.Text == "Gauss-Jordan")
+                {
+                    MetodoGaussJordan metodo = new MetodoGaussJordan();
+                    ResultadoGaussJordan resultado = metodo.Calcular(LeerMatriz());
+                    MostrarResultado(resultado);
+                }
+                else if (cmbMetodo.Text == "Gauss-Seidel")
+                {
+                    MetodoGaussSeidel metodo = new MetodoGaussSeidel();
+                    ResultadoGaussSeidel resultado = metodo.Calcular(LeerMatriz());
+                    MostrarResultado(resultado);
+                }
             }
             catch (Exception ex)
             {
@@ -362,6 +373,33 @@ namespace AnalisisNumericoWeb.Unidad2
             }
         }
 
+        private void MostrarResultado(ResultadoGaussSeidel resultado)
+        {
+            txtResultadoMetodo.Text = resultado.Metodo;
+            txtResultadoDimension.Text = resultado.Dimension + " x " + resultado.Dimension;
+            txtResultadoConverge.Text = resultado.Converge ? "Si" : "No";
+
+            for (int i = 0; i < txtSoluciones.Length; i++)
+            {
+                txtSoluciones[i].Text = "";
+            }
+
+            for (int i = 0; i < resultado.VectorResultado.Length; i++)
+            {
+                txtSoluciones[i].Text = FormatearNumero(resultado.VectorResultado[i]);
+            }
+
+            if (!resultado.Converge)
+            {
+                MessageBox.Show(
+                    resultado.Mensaje,
+                    "Aviso",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+            }
+        }
+
         private void Limpiar()
         {
             int dimension = LeerDimension();
@@ -379,7 +417,7 @@ namespace AnalisisNumericoWeb.Unidad2
 
         private void LimpiarResultados()
         {
-            txtResultadoMetodo.Text = "Gauss-Jordan";
+            txtResultadoMetodo.Text = cmbMetodo.Text;
             txtResultadoDimension.Text = LeerDimension() + " x " + LeerDimension();
             txtResultadoConverge.Text = "-";
 
