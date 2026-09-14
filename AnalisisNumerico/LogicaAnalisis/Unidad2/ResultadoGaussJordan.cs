@@ -8,6 +8,8 @@ namespace LogicaAnalisis.Unidad2
         public int Dimension { get; set; }
         public double[,] MatrizFinal { get; set; }
         public double[] VectorResultado { get; set; }
+        public double NumeroCondicion { get; set; }
+        public string Condicionamiento { get; set; }
         public string Mensaje { get; set; }
         public List<IteracionGaussJordan> Iteraciones { get; set; }
 
@@ -15,6 +17,7 @@ namespace LogicaAnalisis.Unidad2
         {
             Metodo = "Gauss-Jordan";
             Mensaje = "";
+            Condicionamiento = "";
             Iteraciones = new List<IteracionGaussJordan>();
         }
     }

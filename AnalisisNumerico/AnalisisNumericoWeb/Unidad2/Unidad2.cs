@@ -15,6 +15,8 @@ namespace AnalisisNumericoWeb.Unidad2
         private TextBox txtResultadoMetodo;
         private TextBox txtResultadoDimension;
         private TextBox txtResultadoConverge;
+        private TextBox txtResultadoNumeroCondicion;
+        private TextBox txtResultadoCondicionamiento;
         private TextBox[] txtSoluciones;
         private Label[] lblSoluciones;
 
@@ -75,11 +77,11 @@ namespace AnalisisNumericoWeb.Unidad2
             encabezado.Resize += (s, e) => CentrarTitulo();
 
             Panel contenido = new Panel();
-            contenido.Size = new Size(1120, 470);
+            contenido.Size = new Size(1120, 560);
             contenido.BackColor = Color.Transparent;
             Controls.Add(contenido);
 
-            Panel panelDatos = CrearPanelSeccion("Ingreso de datos", new Point(0, 0), new Size(665, 470));
+            Panel panelDatos = CrearPanelSeccion("Ingreso de datos", new Point(0, 0), new Size(665, 560));
             contenido.Controls.Add(panelDatos);
 
             Label lblDimension = CrearLabel("Dimension", new Point(45, 82));
@@ -120,25 +122,27 @@ namespace AnalisisNumericoWeb.Unidad2
 
             panelMatriz = new Panel();
             panelMatriz.Location = new Point(45, 185);
-            panelMatriz.Size = new Size(565, 170);
+            panelMatriz.Size = new Size(565, 220);
             panelMatriz.BackColor = Color.Transparent;
             panelDatos.Controls.Add(panelMatriz);
 
-            Button btnCalcular = CrearBoton("Calcular", new Point(180, 385), new Size(140, 38));
+            Button btnCalcular = CrearBoton("Calcular", new Point(180, 470), new Size(140, 38));
             btnCalcular.Click += (s, e) => Calcular();
             panelDatos.Controls.Add(btnCalcular);
 
-            Button btnLimpiar = CrearBoton("Limpiar", new Point(345, 385), new Size(140, 38));
+            Button btnLimpiar = CrearBoton("Limpiar", new Point(345, 470), new Size(140, 38));
             btnLimpiar.Click += (s, e) => Limpiar();
             panelDatos.Controls.Add(btnLimpiar);
 
-            Panel panelResultados = CrearPanelSeccion("Resultados", new Point(700, 0), new Size(420, 470));
+            Panel panelResultados = CrearPanelSeccion("Resultados", new Point(700, 0), new Size(420, 560));
             contenido.Controls.Add(panelResultados);
 
             int y = 82;
             txtResultadoMetodo = CrearResultado(panelResultados, "Metodo utilizado", "Gauss-Jordan", ref y);
             txtResultadoDimension = CrearResultado(panelResultados, "Dimension", "3 x 3", ref y);
             txtResultadoConverge = CrearResultado(panelResultados, "Converge?", "-", ref y);
+            txtResultadoNumeroCondicion = CrearResultado(panelResultados, "Nro condicion", "-", ref y);
+            txtResultadoCondicionamiento = CrearResultado(panelResultados, "Condicionamiento", "-", ref y);
 
             Label lblSolucion = CrearLabel("Solucion", new Point(45, y + 8));
             panelResultados.Controls.Add(lblSolucion);
@@ -236,6 +240,8 @@ namespace AnalisisNumericoWeb.Unidad2
             catch (Exception ex)
             {
                 txtResultadoConverge.Text = "No";
+                txtResultadoNumeroCondicion.Text = "-";
+                txtResultadoCondicionamiento.Text = "-";
 
                 MessageBox.Show(
                     ex.Message,
@@ -274,6 +280,8 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoMetodo.Text = resultado.Metodo;
             txtResultadoDimension.Text = resultado.Dimension + " x " + resultado.Dimension;
             txtResultadoConverge.Text = "Si";
+            txtResultadoNumeroCondicion.Text = FormatearNumero(resultado.NumeroCondicion);
+            txtResultadoCondicionamiento.Text = resultado.Condicionamiento;
 
             for (int i = 0; i < txtSoluciones.Length; i++)
             {
@@ -291,6 +299,8 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoMetodo.Text = resultado.Metodo;
             txtResultadoDimension.Text = resultado.Dimension + " x " + resultado.Dimension;
             txtResultadoConverge.Text = resultado.Converge ? "Si" : "No";
+            txtResultadoNumeroCondicion.Text = "-";
+            txtResultadoCondicionamiento.Text = "-";
 
             for (int i = 0; i < txtSoluciones.Length; i++)
             {
@@ -333,6 +343,8 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoMetodo.Text = cmbMetodo.Text;
             txtResultadoDimension.Text = LeerDimension() + " x " + LeerDimension();
             txtResultadoConverge.Text = "-";
+            txtResultadoNumeroCondicion.Text = "-";
+            txtResultadoCondicionamiento.Text = "-";
 
             for (int i = 0; i < txtSoluciones.Length; i++)
             {
@@ -427,7 +439,7 @@ namespace AnalisisNumericoWeb.Unidad2
             Label lblNombre = CrearLabel(nombre, new Point(45, y + 4));
             panel.Controls.Add(lblNombre);
 
-            TextBox txtValor = CrearTextBox(new Point(205, y), new Size(145, 30));
+            TextBox txtValor = CrearTextBox(new Point(205, y), new Size(160, 30));
             txtValor.Text = valor;
             txtValor.ReadOnly = true;
             txtValor.BackColor = Color.FromArgb(255, 248, 250);

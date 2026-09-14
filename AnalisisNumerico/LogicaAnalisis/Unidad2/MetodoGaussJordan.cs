@@ -24,6 +24,7 @@ namespace LogicaAnalisis.Unidad2
             }
 
             double[,] matriz = CopiarMatriz(matrizAumentada);
+            double[,] coeficientes = ExtraerCoeficientes(matrizAumentada);
 
             ResultadoGaussJordan resultado = new ResultadoGaussJordan
             {
@@ -99,6 +100,8 @@ namespace LogicaAnalisis.Unidad2
 
             resultado.MatrizFinal = matriz;
             resultado.VectorResultado = ObtenerVectorResultado(matriz);
+            resultado.NumeroCondicion = CalcularNumeroCondicionInfinito(coeficientes);
+            resultado.Condicionamiento = ClasificarCondicionamiento(resultado.NumeroCondicion);
             resultado.Mensaje = "Sistema resuelto correctamente.";
 
             return resultado;
@@ -137,6 +140,162 @@ namespace LogicaAnalisis.Unidad2
             }
 
             return vector;
+        }
+
+        private double[,] ExtraerCoeficientes(double[,] matrizAumentada)
+        {
+            int dimension = matrizAumentada.GetLength(0);
+            double[,] coeficientes = new double[dimension, dimension];
+
+            for (int fila = 0; fila < dimension; fila++)
+            {
+                for (int columna = 0; columna < dimension; columna++)
+                {
+                    coeficientes[fila, columna] = matrizAumentada[fila, columna];
+                }
+            }
+
+            return coeficientes;
+        }
+
+        private double CalcularNumeroCondicionInfinito(double[,] matriz)
+        {
+            double normaMatriz = CalcularNormaInfinito(matriz);
+            double[,] inversa = CalcularInversa(matriz);
+            double normaInversa = CalcularNormaInfinito(inversa);
+
+            return normaMatriz * normaInversa;
+        }
+
+        private string ClasificarCondicionamiento(double numeroCondicion)
+        {
+            if (double.IsInfinity(numeroCondicion) || double.IsNaN(numeroCondicion))
+            {
+                return "Mal condicionado";
+            }
+
+            return numeroCondicion <= 100
+                ? "Bien condicionado"
+                : "Mal condicionado";
+        }
+
+        private double CalcularNormaInfinito(double[,] matriz)
+        {
+            int filas = matriz.GetLength(0);
+            int columnas = matriz.GetLength(1);
+            double norma = 0;
+
+            for (int fila = 0; fila < filas; fila++)
+            {
+                double sumaFila = 0;
+
+                for (int columna = 0; columna < columnas; columna++)
+                {
+                    sumaFila += Math.Abs(matriz[fila, columna]);
+                }
+
+                if (sumaFila > norma)
+                {
+                    norma = sumaFila;
+                }
+            }
+
+            return norma;
+        }
+
+        private double[,] CalcularInversa(double[,] matriz)
+        {
+            int dimension = matriz.GetLength(0);
+            double[,] aumentada = new double[dimension, dimension * 2];
+            double[,] inversa = new double[dimension, dimension];
+
+            for (int fila = 0; fila < dimension; fila++)
+            {
+                for (int columna = 0; columna < dimension; columna++)
+                {
+                    aumentada[fila, columna] = matriz[fila, columna];
+                }
+
+                aumentada[fila, dimension + fila] = 1;
+            }
+
+            for (int filaPivote = 0; filaPivote < dimension; filaPivote++)
+            {
+                int filaMayor = BuscarFilaMayorPivote(aumentada, filaPivote, dimension);
+
+                if (Math.Abs(aumentada[filaMayor, filaPivote]) < ToleranciaPivote)
+                {
+                    throw new ArgumentException("No se puede calcular el condicionamiento: la matriz de coeficientes es singular.");
+                }
+
+                if (filaMayor != filaPivote)
+                {
+                    IntercambiarFilas(aumentada, filaPivote, filaMayor);
+                }
+
+                double pivote = aumentada[filaPivote, filaPivote];
+
+                for (int columna = 0; columna < dimension * 2; columna++)
+                {
+                    aumentada[filaPivote, columna] /= pivote;
+                }
+
+                for (int filaActual = 0; filaActual < dimension; filaActual++)
+                {
+                    if (filaActual == filaPivote)
+                    {
+                        continue;
+                    }
+
+                    double coeficienteCero = aumentada[filaActual, filaPivote];
+
+                    for (int columna = 0; columna < dimension * 2; columna++)
+                    {
+                        aumentada[filaActual, columna] -= coeficienteCero * aumentada[filaPivote, columna];
+                    }
+                }
+            }
+
+            for (int fila = 0; fila < dimension; fila++)
+            {
+                for (int columna = 0; columna < dimension; columna++)
+                {
+                    inversa[fila, columna] = aumentada[fila, dimension + columna];
+                }
+            }
+
+            return inversa;
+        }
+
+        private int BuscarFilaMayorPivote(double[,] matriz, int filaPivote, int dimension)
+        {
+            int filaMayor = filaPivote;
+            double mayorValor = Math.Abs(matriz[filaPivote, filaPivote]);
+
+            for (int fila = filaPivote + 1; fila < dimension; fila++)
+            {
+                double valor = Math.Abs(matriz[fila, filaPivote]);
+
+                if (valor > mayorValor)
+                {
+                    filaMayor = fila;
+                    mayorValor = valor;
+                }
+            }
+
+            return filaMayor;
+        }
+
+        private void IntercambiarFilas(double[,] matriz, int filaUno, int filaDos)
+        {
+            int columnas = matriz.GetLength(1);
+
+            for (int columna = 0; columna < columnas; columna++)
+            {
+                double auxiliar = matriz[filaUno, columna];
+                matriz[filaUno, columna] = matriz[filaDos, columna];
+                matriz[filaDos, columna] = auxiliar;
+            }
         }
 
         private double[,] CopiarMatriz(double[,] matriz)
