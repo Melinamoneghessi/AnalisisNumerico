@@ -23,7 +23,7 @@ namespace LogicaAnalisis.Unidad2
                 throw new ArgumentException("La matriz debe tener dimension n x (n + 1).");
             }
 
-            double[,] matriz = CopiarMatriz(matrizAumentada);
+            ValidarFilasSinInformacion(matrizAumentada, filas);
             double[,] coeficientes = ExtraerCoeficientes(matrizAumentada);
 
             ResultadoGaussJordan resultado = new ResultadoGaussJordan
@@ -31,6 +31,25 @@ namespace LogicaAnalisis.Unidad2
                 Dimension = filas
             };
 
+            double[,] matriz = ResolverPorGaussJordan(matrizAumentada, resultado);
+            double[,] matrizModificada = CrearMatrizModificada(matrizAumentada);
+            double[,] matrizFinalModificada = ResolverPorGaussJordan(matrizModificada, null);
+
+            resultado.MatrizFinal = matriz;
+            resultado.VectorResultado = ObtenerVectorResultado(matriz);
+            resultado.VectorResultadoModificado = ObtenerVectorResultado(matrizFinalModificada);
+            resultado.NumeroCondicion = CalcularNumeroCondicionInfinito(coeficientes);
+            resultado.Condicionamiento = ClasificarCondicionamiento(resultado.NumeroCondicion);
+            resultado.Mensaje = "Sistema resuelto correctamente.";
+
+            return resultado;
+        }
+
+        private double[,] ResolverPorGaussJordan(double[,] matrizAumentada, ResultadoGaussJordan resultado)
+        {
+            int filas = matrizAumentada.GetLength(0);
+            int columnas = matrizAumentada.GetLength(1);
+            double[,] matriz = CopiarMatriz(matrizAumentada);
             int paso = 1;
 
             for (int filaPivote = 0; filaPivote < filas; filaPivote++)
@@ -44,7 +63,7 @@ namespace LogicaAnalisis.Unidad2
 
                 if (Math.Abs(pivote) < ToleranciaPivote)
                 {
-                    throw new ArgumentException("No se puede resolver: el sistema no tiene pivote valido en la fila " + (filaPivote + 1) + ".");
+                    throw new ArgumentException(CrearMensajeSinPivote(matriz, filaPivote));
                 }
 
                 for (int columna = 0; columna < columnas; columna++)
@@ -52,15 +71,18 @@ namespace LogicaAnalisis.Unidad2
                     matriz[filaPivote, columna] = matriz[filaPivote, columna] / pivote;
                 }
 
-                AgregarIteracion(
-                    resultado,
-                    paso++,
-                    filaPivote,
-                    filaPivote,
-                    pivote,
-                    "Dividir F" + (filaPivote + 1) + " por " + FormatearNumero(pivote),
-                    matriz
-                );
+                if (resultado != null)
+                {
+                    AgregarIteracion(
+                        resultado,
+                        paso++,
+                        filaPivote,
+                        filaPivote,
+                        pivote,
+                        "Dividir F" + (filaPivote + 1) + " por " + FormatearNumero(pivote),
+                        matriz
+                    );
+                }
 
                 for (int filaActual = 0; filaActual < filas; filaActual++)
                 {
@@ -86,25 +108,105 @@ namespace LogicaAnalisis.Unidad2
 
                     matriz[filaActual, filaPivote] = 0;
 
-                    AgregarIteracion(
-                        resultado,
-                        paso++,
-                        filaPivote,
-                        filaPivote,
-                        1,
-                        "F" + (filaActual + 1) + " = F" + (filaActual + 1) + " - (" + FormatearNumero(coeficienteCero) + " * F" + (filaPivote + 1) + ")",
-                        matriz
-                    );
+                    if (resultado != null)
+                    {
+                        AgregarIteracion(
+                            resultado,
+                            paso++,
+                            filaPivote,
+                            filaPivote,
+                            1,
+                            "F" + (filaActual + 1) + " = F" + (filaActual + 1) + " - (" + FormatearNumero(coeficienteCero) + " * F" + (filaPivote + 1) + ")",
+                            matriz
+                        );
+                    }
                 }
             }
 
-            resultado.MatrizFinal = matriz;
-            resultado.VectorResultado = ObtenerVectorResultado(matriz);
-            resultado.NumeroCondicion = CalcularNumeroCondicionInfinito(coeficientes);
-            resultado.Condicionamiento = ClasificarCondicionamiento(resultado.NumeroCondicion);
-            resultado.Mensaje = "Sistema resuelto correctamente.";
+            return matriz;
+        }
 
-            return resultado;
+        private void ValidarFilasSinInformacion(double[,] matriz, int dimension)
+        {
+            for (int fila = 0; fila < dimension; fila++)
+            {
+                bool todosCoeficientesCero = true;
+
+                for (int columna = 0; columna < dimension; columna++)
+                {
+                    if (Math.Abs(matriz[fila, columna]) >= ToleranciaPivote)
+                    {
+                        todosCoeficientesCero = false;
+                        break;
+                    }
+                }
+
+                if (!todosCoeficientesCero)
+                {
+                    continue;
+                }
+
+                if (Math.Abs(matriz[fila, dimension]) >= ToleranciaPivote)
+                {
+                    throw new ArgumentException("No se puede resolver: el sistema es incompatible porque la fila " + (fila + 1) + " queda 0 = " + FormatearNumero(matriz[fila, dimension]) + ".");
+                }
+
+                throw new ArgumentException("No se puede resolver: el sistema tiene infinitas soluciones porque la fila " + (fila + 1) + " queda 0 = 0.");
+            }
+        }
+
+        private string CrearMensajeSinPivote(double[,] matriz, int filaPivote)
+        {
+            int dimension = matriz.GetLength(0);
+
+            for (int fila = filaPivote; fila < dimension; fila++)
+            {
+                bool todosCoeficientesCero = true;
+
+                for (int columna = 0; columna < dimension; columna++)
+                {
+                    if (Math.Abs(matriz[fila, columna]) >= ToleranciaPivote)
+                    {
+                        todosCoeficientesCero = false;
+                        break;
+                    }
+                }
+
+                if (!todosCoeficientesCero)
+                {
+                    continue;
+                }
+
+                if (Math.Abs(matriz[fila, dimension]) >= ToleranciaPivote)
+                {
+                    return "No se puede resolver: el sistema es incompatible porque la fila " + (fila + 1) + " queda 0 = " + FormatearNumero(matriz[fila, dimension]) + ".";
+                }
+
+                return "No se puede resolver: el sistema tiene infinitas soluciones porque la fila " + (fila + 1) + " queda 0 = 0.";
+            }
+
+            return "No se puede resolver: el sistema no tiene pivote valido en la fila " + (filaPivote + 1) + ".";
+        }
+
+        private double[,] CrearMatrizModificada(double[,] matrizAumentada)
+        {
+            double[,] matriz = CopiarMatriz(matrizAumentada);
+            int dimension = matriz.GetLength(0);
+
+            for (int fila = dimension - 1; fila >= 0; fila--)
+            {
+                for (int columna = 0; columna < dimension; columna++)
+                {
+                    if (Math.Abs(matriz[fila, columna]) >= ToleranciaPivote)
+                    {
+                        matriz[fila, columna] += Math.Abs(matriz[fila, columna]) * 0.01;
+                        return matriz;
+                    }
+                }
+            }
+
+            matriz[0, 0] = 0.01;
+            return matriz;
         }
 
         private void IntercambiarConFilaValida(double[,] matriz, int filaPivote)

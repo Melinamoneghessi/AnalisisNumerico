@@ -9,12 +9,14 @@ namespace LogicaAnalisis.Unidad2
         public double[] VectorResultado { get; set; }
         public bool Converge { get; set; }
         public string Mensaje { get; set; }
+        public List<string> CambiosFilas { get; set; }
         public List<IteracionGaussSeidel> Iteraciones { get; set; }
 
         public ResultadoGaussSeidel()
         {
             Metodo = "Gauss-Seidel";
             Mensaje = "";
+            CambiosFilas = new List<string>();
             Iteraciones = new List<IteracionGaussSeidel>();
         }
     }

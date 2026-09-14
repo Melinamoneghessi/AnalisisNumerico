@@ -8,7 +8,7 @@ namespace AnalisisNumericoWeb.Unidad2
 {
     public class Unidad2 : Form
     {
-        private ComboBox cmbDimension;
+        private NumericUpDown nudDimension;
         private ComboBox cmbMetodo;
         private Panel panelMatriz;
         private TextBox[,] txtMatriz;
@@ -17,8 +17,8 @@ namespace AnalisisNumericoWeb.Unidad2
         private TextBox txtResultadoConverge;
         private TextBox txtResultadoNumeroCondicion;
         private TextBox txtResultadoCondicionamiento;
-        private TextBox[] txtSoluciones;
-        private Label[] lblSoluciones;
+        private TextBox txtResultadoCambiosFilas;
+        private DataGridView dgvComparacion;
 
         public Unidad2()
         {
@@ -87,16 +87,20 @@ namespace AnalisisNumericoWeb.Unidad2
             Label lblDimension = CrearLabel("Dimension", new Point(45, 82));
             panelDatos.Controls.Add(lblDimension);
 
-            cmbDimension = new ComboBox();
-            cmbDimension.Location = new Point(150, 78);
-            cmbDimension.Size = new Size(115, 32);
-            cmbDimension.Font = new Font("Segoe UI", 10);
-            cmbDimension.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbDimension.Items.Add("3");
-            cmbDimension.Items.Add("4");
-            cmbDimension.SelectedIndex = 0;
-            cmbDimension.SelectedIndexChanged += (s, e) => GenerarMatriz();
-            panelDatos.Controls.Add(cmbDimension);
+            nudDimension = new NumericUpDown();
+            nudDimension.Location = new Point(150, 78);
+            nudDimension.Size = new Size(115, 32);
+            nudDimension.Font = new Font("Segoe UI", 10);
+            nudDimension.Minimum = 1;
+            nudDimension.Maximum = 10;
+            nudDimension.Value = 3;
+            nudDimension.TextAlign = HorizontalAlignment.Center;
+            nudDimension.ValueChanged += (s, e) =>
+            {
+                GenerarMatriz();
+                LimpiarResultados();
+            };
+            panelDatos.Controls.Add(nudDimension);
 
             Label lblMetodo = CrearLabel("Metodo", new Point(45, 126));
             panelDatos.Controls.Add(lblMetodo);
@@ -123,6 +127,7 @@ namespace AnalisisNumericoWeb.Unidad2
             panelMatriz = new Panel();
             panelMatriz.Location = new Point(45, 185);
             panelMatriz.Size = new Size(565, 220);
+            panelMatriz.AutoScroll = true;
             panelMatriz.BackColor = Color.Transparent;
             panelDatos.Controls.Add(panelMatriz);
 
@@ -143,23 +148,13 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoConverge = CrearResultado(panelResultados, "Converge?", "-", ref y);
             txtResultadoNumeroCondicion = CrearResultado(panelResultados, "Nro condicion", "-", ref y);
             txtResultadoCondicionamiento = CrearResultado(panelResultados, "Condicionamiento", "-", ref y);
+            txtResultadoCambiosFilas = CrearResultado(panelResultados, "Cambios filas", "-", ref y);
 
             Label lblSolucion = CrearLabel("Solucion", new Point(45, y + 8));
             panelResultados.Controls.Add(lblSolucion);
 
-            txtSoluciones = new TextBox[4];
-            lblSoluciones = new Label[4];
-
-            for (int i = 0; i < 4; i++)
-            {
-                lblSoluciones[i] = CrearLabel("x" + (i + 1) + " =", new Point(105, y + 48 + (i * 42)));
-                panelResultados.Controls.Add(lblSoluciones[i]);
-
-                txtSoluciones[i] = CrearTextBox(new Point(180, y + 43 + (i * 42)), new Size(145, 30));
-                txtSoluciones[i].ReadOnly = true;
-                txtSoluciones[i].BackColor = Color.FromArgb(255, 248, 250);
-                panelResultados.Controls.Add(txtSoluciones[i]);
-            }
+            dgvComparacion = CrearTablaComparacion(new Point(45, y + 40), new Size(320, 150));
+            panelResultados.Controls.Add(dgvComparacion);
 
             void CentrarContenido()
             {
@@ -175,25 +170,29 @@ namespace AnalisisNumericoWeb.Unidad2
 
         private void GenerarMatriz()
         {
+            string[,] valoresAnteriores = ObtenerTextosMatrizActual();
             int dimension = LeerDimension();
+            panelMatriz.SuspendLayout();
+            panelMatriz.AutoScrollPosition = new Point(0, 0);
             panelMatriz.Controls.Clear();
             txtMatriz = new TextBox[dimension, dimension + 1];
 
-            int anchoCaja = dimension == 3 ? 78 : 66;
+            int anchoCaja = dimension <= 4 ? 66 : 58;
             int altoCaja = 30;
-            int separacionX = dimension == 3 ? 96 : 78;
-            int separacionY = 42;
-            int inicioX = dimension == 3 ? 65 : 42;
+            int separacionX = anchoCaja + (dimension <= 4 ? 18 : 12);
+            int separacionY = 40;
+            int inicioX = 20;
             int inicioY = 34;
-            int xTermino = inicioX + (dimension * separacionX) + 42;
+            int xIgual = inicioX + (dimension * separacionX) + 4;
+            int xTermino = xIgual + 34;
 
             for (int columna = 0; columna < dimension; columna++)
             {
-                Label label = CrearLabel("x" + (columna + 1), new Point(inicioX + (columna * separacionX) + 22, 0));
+                Label label = CrearLabel("x" + (columna + 1), new Point(inicioX + (columna * separacionX) + 18, 0));
                 panelMatriz.Controls.Add(label);
             }
 
-            Label lblTi = CrearLabel("TI", new Point(xTermino + 25, 0));
+            Label lblTi = CrearLabel("TI", new Point(xTermino + 20, 0));
             panelMatriz.Controls.Add(lblTi);
 
             for (int fila = 0; fila < dimension; fila++)
@@ -205,18 +204,31 @@ namespace AnalisisNumericoWeb.Unidad2
                         : inicioX + (columna * separacionX);
 
                     TextBox texto = CrearTextBox(new Point(x, inicioY + (fila * separacionY)), new Size(anchoCaja, altoCaja));
+
+                    if (valoresAnteriores != null &&
+                        fila < valoresAnteriores.GetLength(0) &&
+                        columna < valoresAnteriores.GetLength(1))
+                    {
+                        texto.Text = valoresAnteriores[fila, columna];
+                    }
+
                     txtMatriz[fila, columna] = texto;
                     panelMatriz.Controls.Add(texto);
 
                     if (columna == dimension - 1)
                     {
-                        Label igual = CrearLabel("=", new Point(x + anchoCaja + 20, inicioY + 4 + (fila * separacionY)));
+                        Label igual = CrearLabel("=", new Point(xIgual, inicioY + 4 + (fila * separacionY)));
                         panelMatriz.Controls.Add(igual);
                     }
                 }
             }
 
-            MostrarSolucionesSegunDimension(dimension);
+            panelMatriz.AutoScrollMinSize = new Size(
+                xTermino + anchoCaja + 35,
+                inicioY + (dimension * separacionY) + 20
+            );
+            panelMatriz.ResumeLayout();
+            MostrarFilasComparacion(dimension);
             txtResultadoDimension.Text = dimension + " x " + dimension;
         }
 
@@ -242,6 +254,8 @@ namespace AnalisisNumericoWeb.Unidad2
                 txtResultadoConverge.Text = "No";
                 txtResultadoNumeroCondicion.Text = "-";
                 txtResultadoCondicionamiento.Text = "-";
+                txtResultadoCambiosFilas.Text = "-";
+                MostrarFilasComparacion(LeerDimension());
 
                 MessageBox.Show(
                     ex.Message,
@@ -282,16 +296,9 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoConverge.Text = "Si";
             txtResultadoNumeroCondicion.Text = FormatearNumero(resultado.NumeroCondicion);
             txtResultadoCondicionamiento.Text = resultado.Condicionamiento;
+            txtResultadoCambiosFilas.Text = "-";
 
-            for (int i = 0; i < txtSoluciones.Length; i++)
-            {
-                txtSoluciones[i].Text = "";
-            }
-
-            for (int i = 0; i < resultado.VectorResultado.Length; i++)
-            {
-                txtSoluciones[i].Text = FormatearNumero(resultado.VectorResultado[i]);
-            }
+            CargarTablaComparacion(resultado.VectorResultado, resultado.VectorResultadoModificado);
         }
 
         private void MostrarResultado(ResultadoGaussSeidel resultado)
@@ -301,16 +308,9 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoConverge.Text = resultado.Converge ? "Si" : "No";
             txtResultadoNumeroCondicion.Text = "-";
             txtResultadoCondicionamiento.Text = "-";
+            txtResultadoCambiosFilas.Text = FormatearCambiosFilas(resultado);
 
-            for (int i = 0; i < txtSoluciones.Length; i++)
-            {
-                txtSoluciones[i].Text = "";
-            }
-
-            for (int i = 0; i < resultado.VectorResultado.Length; i++)
-            {
-                txtSoluciones[i].Text = FormatearNumero(resultado.VectorResultado[i]);
-            }
+            CargarTablaComparacion(resultado.VectorResultado, null);
 
             if (!resultado.Converge)
             {
@@ -345,26 +345,76 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoConverge.Text = "-";
             txtResultadoNumeroCondicion.Text = "-";
             txtResultadoCondicionamiento.Text = "-";
+            txtResultadoCambiosFilas.Text = "-";
 
-            for (int i = 0; i < txtSoluciones.Length; i++)
-            {
-                txtSoluciones[i].Text = "";
-            }
+            MostrarFilasComparacion(LeerDimension());
         }
 
-        private void MostrarSolucionesSegunDimension(int dimension)
+        private string[,] ObtenerTextosMatrizActual()
         {
-            if (txtSoluciones == null || lblSoluciones == null)
+            if (txtMatriz == null)
+            {
+                return null;
+            }
+
+            int filas = txtMatriz.GetLength(0);
+            int columnas = txtMatriz.GetLength(1);
+            string[,] valores = new string[filas, columnas];
+
+            for (int fila = 0; fila < filas; fila++)
+            {
+                for (int columna = 0; columna < columnas; columna++)
+                {
+                    valores[fila, columna] = txtMatriz[fila, columna] == null
+                        ? ""
+                        : txtMatriz[fila, columna].Text;
+                }
+            }
+
+            return valores;
+        }
+
+        private void MostrarFilasComparacion(int dimension)
+        {
+            if (dgvComparacion == null)
             {
                 return;
             }
 
-            for (int i = 0; i < txtSoluciones.Length; i++)
+            dgvComparacion.Rows.Clear();
+
+            for (int i = 0; i < dimension; i++)
             {
-                bool visible = i < dimension;
-                txtSoluciones[i].Visible = visible;
-                lblSoluciones[i].Visible = visible;
+                dgvComparacion.Rows.Add("x" + (i + 1), "", "");
             }
+        }
+
+        private void CargarTablaComparacion(double[] normal, double[] modificado)
+        {
+            dgvComparacion.Rows.Clear();
+
+            for (int i = 0; i < normal.Length; i++)
+            {
+                string valorModificado = modificado == null || i >= modificado.Length
+                    ? "-"
+                    : FormatearNumero(modificado[i]);
+
+                dgvComparacion.Rows.Add(
+                    "x" + (i + 1),
+                    FormatearNumero(normal[i]),
+                    valorModificado
+                );
+            }
+        }
+
+        private string FormatearCambiosFilas(ResultadoGaussSeidel resultado)
+        {
+            if (resultado.CambiosFilas == null || resultado.CambiosFilas.Count == 0)
+            {
+                return "Sin cambios";
+            }
+
+            return string.Join("; ", resultado.CambiosFilas.ToArray());
         }
 
         private Panel CrearPanelSeccion(string titulo, Point posicion, Size tamanio)
@@ -450,9 +500,51 @@ namespace AnalisisNumericoWeb.Unidad2
             return txtValor;
         }
 
+        private DataGridView CrearTablaComparacion(Point posicion, Size tamanio)
+        {
+            DataGridView tabla = new DataGridView();
+            tabla.Location = posicion;
+            tabla.Size = tamanio;
+            tabla.AllowUserToAddRows = false;
+            tabla.AllowUserToDeleteRows = false;
+            tabla.AllowUserToResizeColumns = false;
+            tabla.AllowUserToResizeRows = false;
+            tabla.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+            tabla.BackgroundColor = Color.FromArgb(255, 248, 250);
+            tabla.BorderStyle = BorderStyle.FixedSingle;
+            tabla.ColumnHeadersHeight = 30;
+            tabla.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+            tabla.EnableHeadersVisualStyles = false;
+            tabla.Font = new Font("Segoe UI", 9);
+            tabla.GridColor = Color.FromArgb(220, 210, 215);
+            tabla.MultiSelect = false;
+            tabla.ReadOnly = true;
+            tabla.RowHeadersVisible = false;
+            tabla.RowTemplate.Height = 28;
+            tabla.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+
+            tabla.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(244, 180, 196);
+            tabla.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(80, 65, 70);
+            tabla.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+            tabla.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            tabla.DefaultCellStyle.BackColor = Color.FromArgb(255, 248, 250);
+            tabla.DefaultCellStyle.ForeColor = Color.FromArgb(80, 65, 70);
+            tabla.DefaultCellStyle.SelectionBackColor = Color.FromArgb(245, 210, 222);
+            tabla.DefaultCellStyle.SelectionForeColor = Color.FromArgb(80, 65, 70);
+
+            tabla.Columns.Add("Variable", "Variable");
+            tabla.Columns.Add("Normal", "Normal");
+            tabla.Columns.Add("Modificado", "Modificado");
+            tabla.Columns[0].Width = 75;
+            tabla.Columns[1].Width = 115;
+            tabla.Columns[2].Width = 115;
+
+            return tabla;
+        }
+
         private int LeerDimension()
         {
-            return int.Parse(cmbDimension.Text, CultureInfo.InvariantCulture);
+            return (int)nudDimension.Value;
         }
 
         private double LeerDouble(string texto)
