@@ -10,7 +10,6 @@ namespace AnalisisNumericoWeb.Unidad2
     {
         private ComboBox cmbDimension;
         private ComboBox cmbMetodo;
-        private ComboBox cmbEjemplos;
         private Panel panelMatriz;
         private TextBox[,] txtMatriz;
         private TextBox txtResultadoMetodo;
@@ -111,24 +110,12 @@ namespace AnalisisNumericoWeb.Unidad2
             cmbMetodo.SelectedIndexChanged += (s, e) => LimpiarResultados();
             panelDatos.Controls.Add(cmbMetodo);
 
-            Label lblEjemplos = CrearLabel("Ejemplo", new Point(355, 82));
-            panelDatos.Controls.Add(lblEjemplos);
-
-            cmbEjemplos = new ComboBox();
-            cmbEjemplos.Location = new Point(440, 78);
-            cmbEjemplos.Size = new Size(170, 32);
-            cmbEjemplos.Font = new Font("Segoe UI", 10);
-            cmbEjemplos.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbEjemplos.Items.Add("Ejemplo 1");
-            cmbEjemplos.Items.Add("Ejemplo 2");
-            cmbEjemplos.Items.Add("Ejemplo 3");
-            cmbEjemplos.Items.Add("Ejemplo 4");
-            cmbEjemplos.Items.Add("Ejemplo 5");
-            cmbEjemplos.SelectedIndex = 2;
-            panelDatos.Controls.Add(cmbEjemplos);
-
             Button btnGenerar = CrearBoton("Generar", new Point(440, 122), new Size(170, 35));
-            btnGenerar.Click += (s, e) => CargarEjemploSeleccionado();
+            btnGenerar.Click += (s, e) =>
+            {
+                GenerarMatriz();
+                LimpiarResultados();
+            };
             panelDatos.Controls.Add(btnGenerar);
 
             panelMatriz = new Panel();
@@ -180,7 +167,6 @@ namespace AnalisisNumericoWeb.Unidad2
             Resize += (s, e) => CentrarContenido();
 
             GenerarMatriz();
-            CargarEjemplo3();
         }
 
         private void GenerarMatriz()
@@ -228,79 +214,6 @@ namespace AnalisisNumericoWeb.Unidad2
 
             MostrarSolucionesSegunDimension(dimension);
             txtResultadoDimension.Text = dimension + " x " + dimension;
-        }
-
-        private void CargarEjemploSeleccionado()
-        {
-            switch (cmbEjemplos.Text)
-            {
-                case "Ejemplo 1":
-                    CargarMatriz(new double[,]
-                    {
-                        { 5, 1, -4.01015, 1 },
-                        { -1.301525, -0.25, 1.10075, 0.225 },
-                        { 3.751125, -0.801216, -3.002028, 0.75 }
-                    });
-                    break;
-
-                case "Ejemplo 2":
-                    CargarMatriz(new double[,]
-                    {
-                        { 5, 1, -4.01, 1 },
-                        { -1.30, -0.25, 1.10, 0.23 },
-                        { 3.75, -0.80, -3.00, 0.75 }
-                    });
-                    break;
-
-                case "Ejemplo 3":
-                    CargarEjemplo3();
-                    break;
-
-                case "Ejemplo 4":
-                    CargarMatriz(new double[,]
-                    {
-                        { 2, -1, 3, 14.25 },
-                        { 1, 4, -2, -8.25 },
-                        { 0, 5, 1, 1.25 }
-                    });
-                    break;
-
-                case "Ejemplo 5":
-                    CargarMatriz(new double[,]
-                    {
-                        { 1, 1, 1, 1, 130 },
-                        { 0.25, 0.33, 0.5, 0.5, 38 },
-                        { 0.1, 0.1, -1, 0, 0 },
-                        { 0.09, 0.09, 0.09, -1, 0 }
-                    });
-                    break;
-            }
-        }
-
-        private void CargarEjemplo3()
-        {
-            CargarMatriz(new double[,]
-            {
-                { 2, 1, -1, 3 },
-                { 1, -1, 2, 5 },
-                { 3, 2, 1, 12 }
-            });
-        }
-
-        private void CargarMatriz(double[,] matriz)
-        {
-            int dimension = matriz.GetLength(0);
-            cmbDimension.SelectedItem = dimension.ToString(CultureInfo.InvariantCulture);
-            GenerarMatriz();
-            LimpiarResultados();
-
-            for (int fila = 0; fila < dimension; fila++)
-            {
-                for (int columna = 0; columna < dimension + 1; columna++)
-                {
-                    txtMatriz[fila, columna].Text = FormatearNumero(matriz[fila, columna]);
-                }
-            }
         }
 
         private void Calcular()
