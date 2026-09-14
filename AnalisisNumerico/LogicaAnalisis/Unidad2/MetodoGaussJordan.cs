@@ -32,12 +32,9 @@ namespace LogicaAnalisis.Unidad2
             };
 
             double[,] matriz = ResolverPorGaussJordan(matrizAumentada, resultado);
-            double[,] matrizModificada = CrearMatrizModificada(matrizAumentada);
-            double[,] matrizFinalModificada = ResolverPorGaussJordan(matrizModificada, null);
 
             resultado.MatrizFinal = matriz;
             resultado.VectorResultado = ObtenerVectorResultado(matriz);
-            resultado.VectorResultadoModificado = ObtenerVectorResultado(matrizFinalModificada);
             resultado.NumeroCondicion = CalcularNumeroCondicionInfinito(coeficientes);
             resultado.Condicionamiento = ClasificarCondicionamiento(resultado.NumeroCondicion);
             resultado.Mensaje = "Sistema resuelto correctamente.";
@@ -186,27 +183,6 @@ namespace LogicaAnalisis.Unidad2
             }
 
             return "No se puede resolver: el sistema no tiene pivote valido en la fila " + (filaPivote + 1) + ".";
-        }
-
-        private double[,] CrearMatrizModificada(double[,] matrizAumentada)
-        {
-            double[,] matriz = CopiarMatriz(matrizAumentada);
-            int dimension = matriz.GetLength(0);
-
-            for (int fila = dimension - 1; fila >= 0; fila--)
-            {
-                for (int columna = 0; columna < dimension; columna++)
-                {
-                    if (Math.Abs(matriz[fila, columna]) >= ToleranciaPivote)
-                    {
-                        matriz[fila, columna] += Math.Abs(matriz[fila, columna]) * 0.01;
-                        return matriz;
-                    }
-                }
-            }
-
-            matriz[0, 0] = 0.01;
-            return matriz;
         }
 
         private void IntercambiarConFilaValida(double[,] matriz, int filaPivote)

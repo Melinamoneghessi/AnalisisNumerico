@@ -8,7 +8,6 @@ namespace LogicaAnalisis.Unidad2
         public int Dimension { get; set; }
         public double[,] MatrizFinal { get; set; }
         public double[] VectorResultado { get; set; }
-        public double[] VectorResultadoModificado { get; set; }
         public double NumeroCondicion { get; set; }
         public string Condicionamiento { get; set; }
         public string Mensaje { get; set; }

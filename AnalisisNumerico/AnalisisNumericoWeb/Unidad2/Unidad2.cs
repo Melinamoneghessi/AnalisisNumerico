@@ -290,7 +290,7 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoCondicionamiento.Text = resultado.Condicionamiento;
             txtResultadoCambiosFilas.Text = "-";
 
-            CargarTablaComparacion(resultado.VectorResultado, resultado.VectorResultadoModificado);
+            CargarTablaComparacion(resultado.VectorResultado);
         }
 
         private void MostrarResultado(ResultadoGaussSeidel resultado)
@@ -302,7 +302,7 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoCondicionamiento.Text = "-";
             txtResultadoCambiosFilas.Text = FormatearCambiosFilas(resultado);
 
-            CargarTablaComparacion(resultado.VectorResultado, null);
+            CargarTablaComparacion(resultado.VectorResultado);
 
             if (!resultado.Converge)
             {
@@ -377,24 +377,19 @@ namespace AnalisisNumericoWeb.Unidad2
 
             for (int i = 0; i < dimension; i++)
             {
-                dgvComparacion.Rows.Add("x" + (i + 1), "", "");
+                dgvComparacion.Rows.Add("x" + (i + 1), "");
             }
         }
 
-        private void CargarTablaComparacion(double[] normal, double[] modificado)
+        private void CargarTablaComparacion(double[] normal)
         {
             dgvComparacion.Rows.Clear();
 
             for (int i = 0; i < normal.Length; i++)
             {
-                string valorModificado = modificado == null || i >= modificado.Length
-                    ? "-"
-                    : FormatearNumero(modificado[i]);
-
                 dgvComparacion.Rows.Add(
                     "x" + (i + 1),
-                    FormatearNumero(normal[i]),
-                    valorModificado
+                    FormatearNumero(normal[i])
                 );
             }
         }
@@ -525,11 +520,9 @@ namespace AnalisisNumericoWeb.Unidad2
             tabla.DefaultCellStyle.SelectionForeColor = Color.FromArgb(80, 65, 70);
 
             tabla.Columns.Add("Variable", "Variable");
-            tabla.Columns.Add("Normal", "Normal");
-            tabla.Columns.Add("Modificado", "Modificado");
-            tabla.Columns[0].Width = 75;
-            tabla.Columns[1].Width = 115;
-            tabla.Columns[2].Width = 115;
+            tabla.Columns.Add("Valor", "Valor");
+            tabla.Columns[0].Width = 110;
+            tabla.Columns[1].Width = 180;
 
             return tabla;
         }
