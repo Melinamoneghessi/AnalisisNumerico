@@ -116,14 +116,6 @@ namespace AnalisisNumericoWeb.Unidad2
             cmbMetodo.SelectedIndexChanged += (s, e) => LimpiarResultados();
             panelDatos.Controls.Add(cmbMetodo);
 
-            Button btnGenerar = CrearBoton("Generar", new Point(440, 122), new Size(170, 35));
-            btnGenerar.Click += (s, e) =>
-            {
-                GenerarMatriz();
-                LimpiarResultados();
-            };
-            panelDatos.Controls.Add(btnGenerar);
-
             panelMatriz = new Panel();
             panelMatriz.Location = new Point(45, 185);
             panelMatriz.Size = new Size(565, 220);
