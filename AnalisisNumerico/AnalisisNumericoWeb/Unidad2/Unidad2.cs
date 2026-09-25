@@ -15,7 +15,6 @@ namespace AnalisisNumericoWeb.Unidad2
         private TextBox txtResultadoMetodo;
         private TextBox txtResultadoDimension;
         private TextBox txtResultadoConverge;
-        private TextBox txtResultadoNumeroCondicion;
         private TextBox txtResultadoCondicionamiento;
         private TextBox txtResultadoCambiosFilas;
         private DataGridView dgvComparacion;
@@ -138,7 +137,6 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoMetodo = CrearResultado(panelResultados, "Metodo utilizado", "Gauss-Jordan", ref y);
             txtResultadoDimension = CrearResultado(panelResultados, "Dimension", "3 x 3", ref y);
             txtResultadoConverge = CrearResultado(panelResultados, "Converge?", "-", ref y);
-            txtResultadoNumeroCondicion = CrearResultado(panelResultados, "Nro condicion", "-", ref y);
             txtResultadoCondicionamiento = CrearResultado(panelResultados, "Condicionamiento", "-", ref y);
             txtResultadoCambiosFilas = CrearResultado(panelResultados, "Cambios filas", "-", ref y);
 
@@ -244,7 +242,6 @@ namespace AnalisisNumericoWeb.Unidad2
             catch (Exception ex)
             {
                 txtResultadoConverge.Text = "No";
-                txtResultadoNumeroCondicion.Text = "-";
                 txtResultadoCondicionamiento.Text = "-";
                 txtResultadoCambiosFilas.Text = "-";
                 MostrarFilasComparacion(LeerDimension());
@@ -286,7 +283,6 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoMetodo.Text = resultado.Metodo;
             txtResultadoDimension.Text = resultado.Dimension + " x " + resultado.Dimension;
             txtResultadoConverge.Text = "Si";
-            txtResultadoNumeroCondicion.Text = FormatearNumero(resultado.NumeroCondicion);
             txtResultadoCondicionamiento.Text = resultado.Condicionamiento;
             txtResultadoCambiosFilas.Text = "-";
 
@@ -298,7 +294,6 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoMetodo.Text = resultado.Metodo;
             txtResultadoDimension.Text = resultado.Dimension + " x " + resultado.Dimension;
             txtResultadoConverge.Text = resultado.Converge ? "Si" : "No";
-            txtResultadoNumeroCondicion.Text = "-";
             txtResultadoCondicionamiento.Text = "-";
             txtResultadoCambiosFilas.Text = FormatearCambiosFilas(resultado);
 
@@ -335,7 +330,6 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoMetodo.Text = cmbMetodo.Text;
             txtResultadoDimension.Text = LeerDimension() + " x " + LeerDimension();
             txtResultadoConverge.Text = "-";
-            txtResultadoNumeroCondicion.Text = "-";
             txtResultadoCondicionamiento.Text = "-";
             txtResultadoCambiosFilas.Text = "-";
 
