@@ -11,6 +11,7 @@ namespace LogicaAnalisis.Unidad2
         public double NumeroCondicion { get; set; }
         public string Condicionamiento { get; set; }
         public string Mensaje { get; set; }
+        public int IteracionesRealizadas { get; set; }
         public List<IteracionGaussJordan> Iteraciones { get; set; }
 
         public ResultadoGaussJordan()

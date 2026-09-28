@@ -97,6 +97,7 @@ namespace LogicaAnalisis.Unidad2
             }
 
             resultado.Converge = solucion;
+            resultado.IteracionesRealizadas = contador;
             resultado.Mensaje = solucion
                 ? "Sistema resuelto correctamente."
                 : "No se pudo resolver con Gauss-Seidel: se supero el maximo de " + MaximoIteraciones + " iteraciones. El metodo no converge para este sistema o necesita otra reordenacion.";

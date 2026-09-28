@@ -35,6 +35,7 @@ namespace LogicaAnalisis.Unidad2
 
             resultado.MatrizFinal = matriz;
             resultado.VectorResultado = ObtenerVectorResultado(matriz);
+            resultado.IteracionesRealizadas = resultado.Iteraciones.Count;
             resultado.NumeroCondicion = CalcularNumeroCondicionInfinito(coeficientes);
             resultado.Condicionamiento = ClasificarCondicionamiento(resultado.NumeroCondicion);
             resultado.Mensaje = "Sistema resuelto correctamente.";
