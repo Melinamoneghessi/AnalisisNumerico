@@ -12,9 +12,19 @@ namespace LogicaAnalisis.Unidad2
 
         public ResultadoGaussSeidel Calcular(double[,] matrizAumentada)
         {
+            return Calcular(matrizAumentada, null);
+        }
+
+        public ResultadoGaussSeidel Calcular(double[,] matrizAumentada, double? errorToleradoPorcentual)
+        {
             if (matrizAumentada == null)
             {
                 throw new ArgumentException("Debe ingresar una matriz aumentada.");
+            }
+
+            if (errorToleradoPorcentual.HasValue && errorToleradoPorcentual.Value <= 0)
+            {
+                throw new ArgumentException("El error tolerado debe ser mayor a cero.");
             }
 
             int dimension = matrizAumentada.GetLength(0);
@@ -30,7 +40,8 @@ namespace LogicaAnalisis.Unidad2
             ResultadoGaussSeidel resultado = new ResultadoGaussSeidel
             {
                 Dimension = dimension,
-                VectorResultado = new double[dimension]
+                VectorResultado = new double[dimension],
+                ErrorToleradoPorcentual = errorToleradoPorcentual
             };
 
             double[,] matrizTrabajo = CopiarMatriz(matrizAumentada);
@@ -73,13 +84,27 @@ namespace LogicaAnalisis.Unidad2
 
                 double mayorErrorRelativo = 0;
                 int contadorMismoResultado = 0;
+                double[] erroresPorcentuales = errorToleradoPorcentual.HasValue
+                    ? new double[dimension]
+                    : null;
 
                 for (int i = 0; i < dimension; i++)
                 {
-                    double errorRelativo = CalcularErrorRelativo(resultado.VectorResultado[i], vectorAnterior[i]);
-                    mayorErrorRelativo = Math.Max(mayorErrorRelativo, errorRelativo);
+                    double errorComparacion;
 
-                    if (errorRelativo <= Tolerancia)
+                    if (errorToleradoPorcentual.HasValue)
+                    {
+                        errorComparacion = CalcularErrorRelativoPorcentual(resultado.VectorResultado[i], vectorAnterior[i]);
+                        erroresPorcentuales[i] = errorComparacion;
+                    }
+                    else
+                    {
+                        errorComparacion = CalcularErrorRelativo(resultado.VectorResultado[i], vectorAnterior[i]);
+                    }
+
+                    mayorErrorRelativo = Math.Max(mayorErrorRelativo, errorComparacion);
+
+                    if (CumpleTolerancia(errorComparacion, errorToleradoPorcentual))
                     {
                         contadorMismoResultado++;
                     }
@@ -92,6 +117,7 @@ namespace LogicaAnalisis.Unidad2
                     Paso = contador,
                     VectorResultado = ConvertirVectorATexto(resultado.VectorResultado),
                     ErrorRelativo = mayorErrorRelativo,
+                    ErroresPorcentuales = erroresPorcentuales,
                     Converge = solucion
                 });
             }
@@ -339,6 +365,28 @@ namespace LogicaAnalisis.Unidad2
             }
 
             return Math.Abs((valorActual - valorAnterior) / valorActual);
+        }
+
+        private double CalcularErrorRelativoPorcentual(double valorActual, double valorAnterior)
+        {
+            if (Math.Abs(valorActual) < ToleranciaPivote)
+            {
+                return Math.Abs(valorActual - valorAnterior) < ToleranciaPivote
+                    ? 0
+                    : double.PositiveInfinity;
+            }
+
+            return Math.Abs((valorActual - valorAnterior) / valorActual) * 100;
+        }
+
+        private bool CumpleTolerancia(double error, double? errorToleradoPorcentual)
+        {
+            if (errorToleradoPorcentual.HasValue)
+            {
+                return error < errorToleradoPorcentual.Value;
+            }
+
+            return error <= Tolerancia;
         }
 
         private string ConvertirVectorATexto(double[] vector)
