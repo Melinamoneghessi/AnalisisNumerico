@@ -10,7 +10,6 @@ namespace LogicaAnalisis.Unidad2
         public bool Converge { get; set; }
         public string Mensaje { get; set; }
         public int IteracionesRealizadas { get; set; }
-        public double? ErrorToleradoPorcentual { get; set; }
         public List<string> CambiosFilas { get; set; }
         public List<IteracionGaussSeidel> Iteraciones { get; set; }
 

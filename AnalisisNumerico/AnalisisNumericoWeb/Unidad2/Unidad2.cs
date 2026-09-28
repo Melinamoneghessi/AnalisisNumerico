@@ -10,15 +10,11 @@ namespace AnalisisNumericoWeb.Unidad2
     {
         private NumericUpDown nudDimension;
         private ComboBox cmbMetodo;
-        private Label lblErrorTolerado;
-        private TextBox txtErrorTolerado;
         private Panel panelMatriz;
         private TextBox[,] txtMatriz;
         private TextBox txtResultadoMetodo;
         private TextBox txtResultadoDimension;
         private TextBox txtResultadoIteraciones;
-        private Label lblResultadoErrorTolerado;
-        private TextBox txtResultadoErrorTolerado;
         private TextBox txtResultadoConverge;
         private TextBox txtResultadoCondicionamiento;
         private TextBox txtResultadoCambiosFilas;
@@ -117,18 +113,8 @@ namespace AnalisisNumericoWeb.Unidad2
             cmbMetodo.Items.Add("Gauss-Jordan");
             cmbMetodo.Items.Add("Gauss-Seidel");
             cmbMetodo.SelectedIndex = 0;
-            cmbMetodo.SelectedIndexChanged += (s, e) =>
-            {
-                ActualizarVisibilidadErrorTolerado();
-                LimpiarResultados();
-            };
+            cmbMetodo.SelectedIndexChanged += (s, e) => LimpiarResultados();
             panelDatos.Controls.Add(cmbMetodo);
-
-            lblErrorTolerado = CrearLabel("Error tolerado (%)", new Point(345, 126));
-            panelDatos.Controls.Add(lblErrorTolerado);
-
-            txtErrorTolerado = CrearTextBox(new Point(480, 122), new Size(110, 30));
-            panelDatos.Controls.Add(txtErrorTolerado);
 
             panelMatriz = new Panel();
             panelMatriz.Location = new Point(45, 185);
@@ -152,8 +138,6 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoMetodo = CrearResultado(panelResultados, "Metodo utilizado", "Gauss-Jordan", ref y);
             txtResultadoDimension = CrearResultado(panelResultados, "Dimension", "3 x 3", ref y);
             txtResultadoIteraciones = CrearResultado(panelResultados, "Iteraciones", "-", ref y);
-            txtResultadoErrorTolerado = CrearResultado(panelResultados, "Error tolerado (%)", "-", ref y);
-            lblResultadoErrorTolerado = (Label)txtResultadoErrorTolerado.Tag;
             txtResultadoConverge = CrearResultado(panelResultados, "Converge?", "-", ref y);
             txtResultadoCondicionamiento = CrearResultado(panelResultados, "Condicionamiento", "-", ref y);
             txtResultadoCambiosFilas = CrearResultado(panelResultados, "Cambios filas", "-", ref y);
@@ -161,7 +145,7 @@ namespace AnalisisNumericoWeb.Unidad2
             Label lblSolucion = CrearLabel("Solucion", new Point(45, y + 8));
             panelResultados.Controls.Add(lblSolucion);
 
-            dgvComparacion = CrearTablaComparacion(new Point(45, y + 40), new Size(320, 105));
+            dgvComparacion = CrearTablaComparacion(new Point(45, y + 40), new Size(320, 150));
             panelResultados.Controls.Add(dgvComparacion);
 
             void CentrarContenido()
@@ -174,7 +158,6 @@ namespace AnalisisNumericoWeb.Unidad2
             Resize += (s, e) => CentrarContenido();
 
             GenerarMatriz();
-            ActualizarVisibilidadErrorTolerado();
         }
 
         private void GenerarMatriz()
@@ -254,7 +237,7 @@ namespace AnalisisNumericoWeb.Unidad2
                 else if (cmbMetodo.Text == "Gauss-Seidel")
                 {
                     MetodoGaussSeidel metodo = new MetodoGaussSeidel();
-                    ResultadoGaussSeidel resultado = metodo.Calcular(LeerMatriz(), LeerErrorToleradoPorcentual());
+                    ResultadoGaussSeidel resultado = metodo.Calcular(LeerMatriz());
                     MostrarResultado(resultado);
                 }
             }
@@ -302,12 +285,11 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoMetodo.Text = resultado.Metodo;
             txtResultadoDimension.Text = resultado.Dimension + " x " + resultado.Dimension;
             txtResultadoIteraciones.Text = resultado.IteracionesRealizadas.ToString();
-            MostrarResultadoErrorTolerado(null);
             txtResultadoConverge.Text = "Si";
             txtResultadoCondicionamiento.Text = resultado.Condicionamiento;
             txtResultadoCambiosFilas.Text = "-";
 
-            CargarTablaComparacion(resultado.VectorResultado, null);
+            CargarTablaComparacion(resultado.VectorResultado);
         }
 
         private void MostrarResultado(ResultadoGaussSeidel resultado)
@@ -315,12 +297,11 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoMetodo.Text = resultado.Metodo;
             txtResultadoDimension.Text = resultado.Dimension + " x " + resultado.Dimension;
             txtResultadoIteraciones.Text = resultado.IteracionesRealizadas.ToString();
-            MostrarResultadoErrorTolerado(resultado.ErrorToleradoPorcentual);
             txtResultadoConverge.Text = resultado.Converge ? "Si" : "No";
             txtResultadoCondicionamiento.Text = "-";
             txtResultadoCambiosFilas.Text = FormatearCambiosFilas(resultado);
 
-            CargarTablaComparacion(resultado.VectorResultado, ObtenerErroresUltimaIteracion(resultado));
+            CargarTablaComparacion(resultado.VectorResultado);
 
             if (!resultado.Converge)
             {
@@ -345,11 +326,6 @@ namespace AnalisisNumericoWeb.Unidad2
                 }
             }
 
-            if (txtErrorTolerado != null)
-            {
-                txtErrorTolerado.Text = "";
-            }
-
             LimpiarResultados();
         }
 
@@ -358,7 +334,6 @@ namespace AnalisisNumericoWeb.Unidad2
             txtResultadoMetodo.Text = cmbMetodo.Text;
             txtResultadoDimension.Text = LeerDimension() + " x " + LeerDimension();
             txtResultadoIteraciones.Text = "-";
-            MostrarResultadoErrorTolerado(null);
             txtResultadoConverge.Text = "-";
             txtResultadoCondicionamiento.Text = "-";
             txtResultadoCambiosFilas.Text = "-";
@@ -399,43 +374,23 @@ namespace AnalisisNumericoWeb.Unidad2
 
             dgvComparacion.Rows.Clear();
 
-            if (dgvComparacion.Columns.Contains("Error"))
-            {
-                dgvComparacion.Columns["Error"].Visible = false;
-            }
-
             for (int i = 0; i < dimension; i++)
             {
                 dgvComparacion.Rows.Add("x" + (i + 1), "");
             }
         }
 
-        private void CargarTablaComparacion(double[] normal, double[] erroresPorcentuales)
+        private void CargarTablaComparacion(double[] normal)
         {
             dgvComparacion.Rows.Clear();
-            bool mostrarErrores = erroresPorcentuales != null;
-            dgvComparacion.Columns["Error"].Visible = mostrarErrores;
 
             for (int i = 0; i < normal.Length; i++)
             {
                 dgvComparacion.Rows.Add(
                     "x" + (i + 1),
-                    FormatearNumero(normal[i]),
-                    mostrarErrores ? FormatearNumero(erroresPorcentuales[i]) : ""
+                    FormatearNumero(normal[i])
                 );
             }
-        }
-
-        private double[] ObtenerErroresUltimaIteracion(ResultadoGaussSeidel resultado)
-        {
-            if (!resultado.ErrorToleradoPorcentual.HasValue ||
-                resultado.Iteraciones == null ||
-                resultado.Iteraciones.Count == 0)
-            {
-                return null;
-            }
-
-            return resultado.Iteraciones[resultado.Iteraciones.Count - 1].ErroresPorcentuales;
         }
 
         private string FormatearCambiosFilas(ResultadoGaussSeidel resultado)
@@ -446,56 +401,6 @@ namespace AnalisisNumericoWeb.Unidad2
             }
 
             return string.Join("; ", resultado.CambiosFilas.ToArray());
-        }
-
-        private double? LeerErrorToleradoPorcentual()
-        {
-            if (txtErrorTolerado == null || string.IsNullOrWhiteSpace(txtErrorTolerado.Text))
-            {
-                return null;
-            }
-
-            double errorTolerado = LeerDouble(txtErrorTolerado.Text);
-
-            if (errorTolerado <= 0)
-            {
-                throw new ArgumentException("El error tolerado debe ser mayor a cero.");
-            }
-
-            return errorTolerado;
-        }
-
-        private void ActualizarVisibilidadErrorTolerado()
-        {
-            bool mostrar = cmbMetodo != null && cmbMetodo.Text == "Gauss-Seidel";
-
-            if (lblErrorTolerado != null)
-            {
-                lblErrorTolerado.Visible = mostrar;
-            }
-
-            if (txtErrorTolerado != null)
-            {
-                txtErrorTolerado.Visible = mostrar;
-            }
-        }
-
-        private void MostrarResultadoErrorTolerado(double? errorToleradoPorcentual)
-        {
-            bool mostrar = errorToleradoPorcentual.HasValue;
-
-            if (lblResultadoErrorTolerado != null)
-            {
-                lblResultadoErrorTolerado.Visible = mostrar;
-            }
-
-            if (txtResultadoErrorTolerado != null)
-            {
-                txtResultadoErrorTolerado.Visible = mostrar;
-                txtResultadoErrorTolerado.Text = mostrar
-                    ? FormatearNumero(errorToleradoPorcentual.Value)
-                    : "-";
-            }
         }
 
         private Panel CrearPanelSeccion(string titulo, Point posicion, Size tamanio)
@@ -574,7 +479,6 @@ namespace AnalisisNumericoWeb.Unidad2
             txtValor.Text = valor;
             txtValor.ReadOnly = true;
             txtValor.BackColor = Color.FromArgb(255, 248, 250);
-            txtValor.Tag = lblNombre;
             panel.Controls.Add(txtValor);
 
             y += 44;
@@ -616,11 +520,8 @@ namespace AnalisisNumericoWeb.Unidad2
 
             tabla.Columns.Add("Variable", "Variable");
             tabla.Columns.Add("Valor", "Valor");
-            tabla.Columns.Add("Error", "Error (%)");
-            tabla.Columns[0].Width = 80;
-            tabla.Columns[1].Width = 130;
-            tabla.Columns[2].Width = 100;
-            tabla.Columns[2].Visible = false;
+            tabla.Columns[0].Width = 110;
+            tabla.Columns[1].Width = 180;
 
             return tabla;
         }
