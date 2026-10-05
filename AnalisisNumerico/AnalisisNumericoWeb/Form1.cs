@@ -731,7 +731,6 @@ else
 
 
 
-        // POR AHORA SOLO MUESTRA QUÉ UNIDAD SE SELECCIONÓ
         private void AbrirUnidad(string unidad)
         {
             if (unidad == "UNIDAD 1")
@@ -744,6 +743,13 @@ else
                 global::AnalisisNumericoWeb.Unidad2.Unidad2 paginaUnidad2 =
                     new global::AnalisisNumericoWeb.Unidad2.Unidad2();
                 paginaUnidad2.ShowDialog();
+            }
+            else if (unidad == "UNIDAD 3")
+            {
+                using (var paginaUnidad3 = new global::AnalisisNumericoWeb.Unidad3.Unidad3())
+                {
+                    paginaUnidad3.ShowDialog(this);
+                }
             }
         }
     }

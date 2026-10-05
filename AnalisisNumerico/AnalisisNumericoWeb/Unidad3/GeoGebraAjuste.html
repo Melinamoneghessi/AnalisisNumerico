@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://cdn.geogebra.org" crossorigin>
+    <style>
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: white; font-family: "Segoe UI", Arial, sans-serif; }
+        #leyenda { height: 30px; display: flex; align-items: center; gap: 18px; padding: 0 8px; box-sizing: border-box; font-size: 12px; color: #59414b; }
+        #leyenda span { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+        .punto { width: 7px; height: 7px; border-radius: 50%; background: #41373c; }
+        .original { width: 24px; border-top: 2px dashed #c85a82; }
+        .modificada { width: 24px; border-top: 2px solid #1e8c7d; }
+        [hidden] { display: none !important; }
+        #grafico { position: absolute; top: 30px; bottom: 0; left: 0; right: 0; overflow: hidden; }
+        #estado { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 16px; background: white; color: #6e4655; text-align: center; }
+        #reintentar { padding: 8px 18px; border: 0; border-radius: 4px; background: #fae5ec; color: #59414b; cursor: pointer; font: inherit; }
+    </style>
+</head>
+<body>
+    <div id="leyenda">
+        <span><i class="punto"></i>Puntos</span>
+        <span><i class="original"></i>Ajuste original</span>
+        <span id="leyenda-modificada" hidden><i class="modificada"></i>Recta modificada</span>
+    </div>
+    <div id="grafico"><div id="ggb-element"></div></div>
+    <div id="estado" role="status">
+        <p id="mensaje">Cargando GeoGebra...</p>
+        <button id="reintentar" type="button" hidden>Reintentar</button>
+    </div>
+    <script>
+        let api = null;
+        let datosPendientes = null;
+        let temporizadorCarga;
+        window.geoGebraListo = false;
+
+        function mostrarError(mensaje) {
+            document.getElementById("mensaje").textContent = mensaje;
+            document.getElementById("estado").hidden = false;
+            document.getElementById("reintentar").hidden = false;
+        }
+
+        function numero(valor) {
+            const partes = String(valor).split(/e/i);
+            return partes.length === 1 ? partes[0] : "(" + partes[0] + "*10^(" + partes[1] + "))";
+        }
+
+        function dimensionar() {
+            if (!api) return;
+            const area = document.getElementById("grafico");
+            const vista = JSON.parse(api.getViewProperties(1));
+            api.setSize(Math.max(1, area.clientWidth), Math.max(1, area.clientHeight));
+            if (vista.width > 0 && vista.height > 0) {
+                api.setCoordSystem(vista.xMin, vista.xMin + vista.width * vista.invXscale,
+                    vista.yMin, vista.yMin + vista.height * vista.invYscale);
+            }
+        }
+
+        function aplicarDatos() {
+            if (!api) return;
+            api.setRepaintingActive(false);
+            try {
+                api.newConstruction();
+                api.setAxesVisible(true, true);
+                api.setGridVisible(true);
+                api.setAxisLabels(1, "x", "y", "");
+                document.getElementById("leyenda-modificada").hidden = !datosPendientes || !datosPendientes.modificada;
+                if (datosPendientes) {
+                    datosPendientes.puntos.forEach(function (punto, indice) {
+                        const nombre = "P" + (indice + 1);
+                        if (!api.evalCommand(nombre + "=(" + numero(punto[0]) + "," + numero(punto[1]) + ")")) {
+                            throw new Error("Punto invalido");
+                        }
+                        api.setColor(nombre, 65, 55, 60);
+                        api.setPointSize(nombre, 5);
+                        api.setLabelStyle(nombre, 0);
+                        api.setLabelVisible(nombre, true);
+                        api.setFixed(nombre, true, false);
+                    });
+                    dibujarFuncion("f", datosPendientes.original, 200, 90, 130, 1);
+                    if (datosPendientes.modificada) dibujarFuncion("g", datosPendientes.modificada, 30, 140, 125, 0);
+                    api.setCoordSystem.apply(api, datosPendientes.limites);
+                } else {
+                    api.setCoordSystem(-5, 5, -5, 5);
+                }
+                api.setMode(40);
+                document.getElementById("estado").hidden = true;
+            } catch (error) {
+                mostrarError("No se pudo graficar el ajuste en GeoGebra.");
+            } finally {
+                api.setRepaintingActive(true);
+            }
+        }
+
+        function dibujarFuncion(nombre, expresion, rojo, verde, azul, estilo) {
+            if (!api.evalCommand(nombre + "(x)=" + expresion)) throw new Error("Funcion invalida");
+            api.setColor(nombre, rojo, verde, azul);
+            api.setLineThickness(nombre, 5);
+            api.setLineStyle(nombre, estilo);
+            api.setLabelVisible(nombre, false);
+            api.setFixed(nombre, true, false);
+        }
+
+        window.mostrarAjuste = function (datos) {
+            datosPendientes = datos;
+            aplicarDatos();
+        };
+
+        function iniciarGeoGebra() {
+            const area = document.getElementById("grafico");
+            const parametros = {
+                id: "ggbApplet",
+                appName: "classic",
+                width: Math.max(1, area.clientWidth),
+                height: Math.max(1, area.clientHeight),
+                // El panel controla el tamano; evitar un segundo escalado del applet.
+                disableAutoScale: true,
+                perspective: "G",
+                language: "es",
+                showToolBar: false,
+                showAlgebraInput: false,
+                showMenuBar: false,
+                showZoomButtons: true,
+                enableRightClick: true,
+                enableShiftDragZoom: true,
+                enableLabelDrags: false,
+                showKeyboardOnFocus: false,
+                showStartTooltip: false,
+                preventFocus: true,
+                errorDialogsActive: false,
+                borderColor: "#FFFFFF",
+                appletOnLoad: function (instancia) {
+                    clearTimeout(temporizadorCarga);
+                    api = instancia;
+                    window.ggbApplet = instancia;
+                    window.geoGebraListo = true;
+                    api.setPerspective("G");
+                    dimensionar();
+                    aplicarDatos();
+                }
+            };
+            new GGBApplet(parametros, true).inject("ggb-element");
+        }
+
+        document.getElementById("reintentar").addEventListener("click", function () {
+            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage("reintentar");
+            else window.location.reload();
+        });
+        new ResizeObserver(dimensionar).observe(document.getElementById("grafico"));
+        temporizadorCarga = setTimeout(function () {
+            if (!api) mostrarError("No se pudo cargar GeoGebra. Verifica la conexion a internet.");
+        }, 45000);
+        const script = document.createElement("script");
+        script.src = "https://cdn.geogebra.org/apps/deployggb.js";
+        script.onload = iniciarGeoGebra;
+        script.onerror = function () {
+            clearTimeout(temporizadorCarga);
+            mostrarError("No se pudo cargar GeoGebra. Verifica la conexion a internet.");
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>

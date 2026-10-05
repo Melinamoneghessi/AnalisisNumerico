@@ -83,6 +83,9 @@
     <Compile Include="Unidad2\MetodoGaussSeidel.cs" />
     <Compile Include="Unidad2\ResultadoGaussJordan.cs" />
     <Compile Include="Unidad2\ResultadoGaussSeidel.cs" />
+    <Compile Include="Unidad3\PuntoAjuste.cs" />
+    <Compile Include="Unidad3\ResultadoAjuste.cs" />
+    <Compile Include="Unidad3\MetodoAjusteCurvas.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
