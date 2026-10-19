@@ -751,6 +751,13 @@ else
                     paginaUnidad3.ShowDialog(this);
                 }
             }
+            else if (unidad == "UNIDAD 4")
+            {
+                using (var paginaUnidad4 = new global::AnalisisNumericoWeb.Unidad4.Unidad4())
+                {
+                    paginaUnidad4.ShowDialog(this);
+                }
+            }
         }
     }
 }

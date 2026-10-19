@@ -7,7 +7,7 @@ using Microsoft.Web.WebView2.Core;
 
 namespace AnalisisNumericoWeb
 {
-    // Entorno de GeoGebra compartido entre el menu y las Unidades 1 y 3.
+    // Entorno de GeoGebra compartido entre el menu y las distintas unidades.
     // Compartir el mismo CoreWebView2Environment evita bloquear la carpeta de
     // perfil y permite que Unidad1 reaproveche la cache que dejo la precarga.
     internal static class GeoGebraWebView

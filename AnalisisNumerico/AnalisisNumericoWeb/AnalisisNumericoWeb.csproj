@@ -87,6 +87,13 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Unidad3\GraficoAjuste.cs" />
+    <Compile Include="Unidad4\Unidad4.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unidad4\GraficoIntegracion.cs" />
+    <EmbeddedResource Include="Unidad4\GeoGebraIntegracion.html">
+      <LogicalName>AnalisisNumericoWeb.Unidad4.GeoGebraIntegracion.html</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="Unidad3\GeoGebraAjuste.html">
       <LogicalName>AnalisisNumericoWeb.Unidad3.GeoGebraAjuste.html</LogicalName>
     </EmbeddedResource>

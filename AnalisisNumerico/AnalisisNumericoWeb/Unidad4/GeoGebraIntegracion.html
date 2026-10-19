@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://cdn.geogebra.org" crossorigin>
+    <style>
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: white; font-family: "Segoe UI", Arial, sans-serif; }
+        #leyenda { height: 36px; display: flex; align-items: center; gap: 16px; padding: 0 4px; box-sizing: border-box; font-size: 12px; color: #59414b; }
+        #leyenda span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+        .curva { width: 22px; border-top: 2px solid #1e8c7d; }
+        .aproximacion { width: 22px; border-top: 2px dashed #c85a82; }
+        [hidden] { display: none !important; }
+        #grafico { position: absolute; top: 36px; bottom: 0; left: 0; right: 0; overflow: hidden; }
+        #estado { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 16px; background: white; color: #6e4655; text-align: center; }
+        #reintentar { padding: 8px 18px; border: 0; border-radius: 4px; background: #fae5ec; color: #59414b; cursor: pointer; font: inherit; }
+    </style>
+</head>
+<body>
+    <div id="leyenda"><span><i class="curva"></i>f(x)</span><span><i class="aproximacion"></i>Aproximacion</span></div>
+    <div id="grafico"><div id="ggb-element"></div></div>
+    <div id="estado" role="status"><p id="mensaje">Cargando GeoGebra...</p><button id="reintentar" type="button" hidden>Reintentar</button></div>
+    <script>
+        let api = null;
+        let datosPendientes = null;
+        let temporizadorCarga;
+        window.geoGebraListo = false;
+
+        function mostrarError(mensaje) {
+            document.getElementById("mensaje").textContent = mensaje;
+            document.getElementById("estado").hidden = false;
+            document.getElementById("reintentar").hidden = false;
+        }
+
+        function numero(valor) {
+            const partes = String(valor).split(/e/i);
+            return partes.length === 1 ? partes[0] : "(" + partes[0] + "*10^(" + partes[1] + "))";
+        }
+
+        function punto(p) { return "(" + numero(p[0]) + "," + numero(p[1]) + ")"; }
+        function lista(puntos) { return "{" + puntos.map(punto).join(",") + "}"; }
+        function crear(nombre, comando) {
+            if (!api.evalCommand(nombre + "=" + comando)) throw new Error("No se pudo crear " + nombre);
+        }
+
+        function dimensionar() {
+            if (!api) return;
+            const area = document.getElementById("grafico");
+            const vista = JSON.parse(api.getViewProperties(1));
+            api.setSize(Math.max(1, area.clientWidth), Math.max(1, area.clientHeight));
+            if (vista.width > 0 && vista.height > 0) {
+                api.setCoordSystem(vista.xMin, vista.xMin + vista.width * vista.invXscale,
+                    vista.yMin, vista.yMin + vista.height * vista.invYscale);
+            }
+        }
+
+        function separarRegiones(puntos) {
+            const regiones = [];
+            let tramo = [puntos[0]];
+            for (let i = 1; i < puntos.length; i++) {
+                const anterior = puntos[i - 1], actual = puntos[i];
+                if (Math.sign(anterior[1]) * Math.sign(actual[1]) < 0) {
+                    const escala = Math.max(Math.abs(anterior[1]), Math.abs(actual[1]));
+                    const fraccion = Math.abs(anterior[1] / escala) / (Math.abs(anterior[1] / escala) + Math.abs(actual[1] / escala));
+                    const cruce = [anterior[0] + (actual[0] - anterior[0]) * fraccion, 0];
+                    tramo.push(cruce); regiones.push(tramo); tramo = [cruce];
+                }
+                tramo.push(actual);
+                if (actual[1] === 0 && tramo.some(p => p[1] !== 0)) { regiones.push(tramo); tramo = [actual]; }
+            }
+            if (tramo.some(p => p[1] !== 0)) regiones.push(tramo);
+            return regiones;
+        }
+
+        function aplicarDatos() {
+            if (!api) return;
+            api.setRepaintingActive(false);
+            try {
+                api.newConstruction();
+                api.setAxesVisible(true, true); api.setGridVisible(true); api.setAxisLabels(1, "x", "y", "");
+                const visibles = new Set();
+                if (datosPendientes) {
+                    separarRegiones(datosPendientes.aproximacion).forEach(function (tramo, indice) {
+                        const nombre = "region" + indice;
+                        const vertices = [[tramo[0][0], 0], ...tramo, [tramo[tramo.length - 1][0], 0]]
+                            .filter((p, i, a) => i === 0 || p[0] !== a[i - 1][0] || p[1] !== a[i - 1][1]);
+                        if (vertices.length > 1 && vertices[0][0] === vertices[vertices.length - 1][0]
+                            && vertices[0][1] === vertices[vertices.length - 1][1]) vertices.pop();
+                        if (vertices.length < 3) return;
+                        crear(nombre, "Polygon(" + lista(vertices) + ")");
+                        api.setColor(nombre, 200, 90, 130); api.setFilling(nombre, 0.2); api.setLineThickness(nombre, 1);
+                        api.setLayer(nombre, 0); visibles.add(nombre);
+                    });
+                    if (datosPendientes.nodos) datosPendientes.nodos.forEach(function (p, i) {
+                        if (p[1] === 0) return;
+                        const nombre = "division" + i;
+                        crear(nombre, "Segment(" + punto([p[0], 0]) + "," + punto(p) + ")");
+                        api.setColor(nombre, 185, 150, 165); api.setLineThickness(nombre, 1); visibles.add(nombre);
+                    });
+                    // Las dos curvas usan valores del mismo evaluador que calcula la integral.
+                    crear("curva", "Polyline(" + lista(datosPendientes.curva) + ")");
+                    api.setColor("curva", 30, 140, 125); api.setLineThickness("curva", 5); api.setLayer("curva", 2);
+                    crear("aproximacion", "Polyline(" + lista(datosPendientes.aproximacion) + ")");
+                    api.setColor("aproximacion", 200, 90, 130); api.setLineThickness("aproximacion", 3);
+                    api.setLineStyle("aproximacion", 1); api.setLayer("aproximacion", 1);
+                    visibles.add("curva"); visibles.add("aproximacion");
+                    api.setCoordSystem.apply(api, datosPendientes.limites);
+                } else api.setCoordSystem(-5, 5, -5, 5);
+                api.getAllObjectNames().forEach(function (nombre) {
+                    api.setVisible(nombre, visibles.has(nombre)); api.setLabelVisible(nombre, false); api.setFixed(nombre, true, false);
+                });
+                api.setMode(40);
+                document.getElementById("estado").hidden = true;
+            } catch (error) {
+                console.error(error);
+                mostrarError("No se pudo graficar la integral en GeoGebra.");
+            } finally { api.setRepaintingActive(true); }
+        }
+
+        window.mostrarIntegral = function (datos) { datosPendientes = datos; aplicarDatos(); };
+
+        function iniciarGeoGebra() {
+            const area = document.getElementById("grafico");
+            new GGBApplet({
+                id: "ggbApplet", appName: "classic", perspective: "G", language: "es", disableAutoScale: true,
+                width: Math.max(1, area.clientWidth), height: Math.max(1, area.clientHeight),
+                showToolBar: false, showAlgebraInput: false, showMenuBar: false, showZoomButtons: true,
+                enableRightClick: true, enableShiftDragZoom: true, enableLabelDrags: false,
+                showKeyboardOnFocus: false, showStartTooltip: false, preventFocus: true,
+                errorDialogsActive: false, borderColor: "#FFFFFF",
+                appletOnLoad: function (instancia) {
+                    clearTimeout(temporizadorCarga); api = instancia; window.ggbApplet = instancia;
+                    window.geoGebraListo = true; api.setPerspective("G"); dimensionar(); aplicarDatos();
+                }
+            }, true).inject("ggb-element");
+        }
+
+        document.getElementById("reintentar").addEventListener("click", function () {
+            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage("reintentar");
+            else window.location.reload();
+        });
+        new ResizeObserver(dimensionar).observe(document.getElementById("grafico"));
+        temporizadorCarga = setTimeout(function () {
+            if (!api) mostrarError("No se pudo cargar GeoGebra. Verifica la conexion a internet.");
+        }, 45000);
+        const script = document.createElement("script");
+        script.src = "https://cdn.geogebra.org/apps/deployggb.js";
+        script.onload = iniciarGeoGebra;
+        script.onerror = function () { clearTimeout(temporizadorCarga); mostrarError("No se pudo cargar GeoGebra. Verifica la conexion a internet."); };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
