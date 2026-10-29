@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
@@ -22,6 +23,7 @@ internal static class Unidad4Tests
         try
         {
             ProbarCalculos();
+            ProbarCalculosTabla();
             if (args.Length < 2 || args[1] != "True")
             {
                 Application.EnableVisualStyles();
@@ -106,6 +108,76 @@ internal static class Unidad4Tests
         Console.WriteLine("Calculos y validaciones correctos.");
     }
 
+    private static void ProbarCalculosTabla()
+    {
+        IntegradorNumerico integrador = new IntegradorNumerico();
+        foreach (MetodoIntegracion metodo in Enum.GetValues(typeof(MetodoIntegracion)))
+        {
+            int n = metodo == MetodoIntegracion.TrapeciosSimple ? 1
+                : metodo == MetodoIntegracion.SimpsonUnTercioSimple ? 2
+                : metodo == MetodoIntegracion.SimpsonTresOctavos ? 3 : 10;
+            ResultadoIntegracion r = integrador.CalcularTabla(Tabla(x => 2 * x + 1, -2, 5.0 / n, n), metodo);
+            Cerca(r.Integral, 10, 1e-11, "Tabla lineal: " + metodo);
+            Verificar(r.UsaTabla && r.PasoUniforme && r.Subintervalos == n, "Origen y segmentos de la tabla: " + metodo);
+            Cerca(r.ExtremoIzquierdo, -2, 0, "Xi desde la tabla: " + metodo);
+            Cerca(r.ExtremoDerecho, 3, 1e-12, "Xd desde la tabla: " + metodo);
+            Cerca(integrador.CalcularTabla(Tabla(x => -2, 0, 1.0 / n, n), metodo).Integral, -2, 1e-12, "Tabla negativa: " + metodo);
+            Cerca(integrador.CalcularTabla(Tabla(x => 0, 0, 1.0 / n, n), metodo).Integral, 0, 0, "Tabla nula: " + metodo);
+        }
+        Cerca(integrador.CalcularTabla(Tabla(x => x * x, 0, 2, 1), MetodoIntegracion.TrapeciosSimple).Integral, 4, 1e-12, "Tabla trapecio simple");
+        Cerca(integrador.CalcularTabla(Tabla(x => x * x, 0, 1, 2), MetodoIntegracion.SimpsonUnTercioSimple).Integral, 8.0 / 3, 1e-12, "Tabla Simpson 1/3 simple");
+        Cerca(integrador.CalcularTabla(Tabla(x => x * x * x, 0, 0.5, 3), MetodoIntegracion.SimpsonTresOctavos).Integral, 1.265625, 1e-12, "Tabla Simpson 3/8");
+        foreach (int n in new[] { 2, 3, 4, 5, 7, 25, 1000 })
+        {
+            ResultadoIntegracion r = integrador.CalcularTabla(Tabla(x => x * x * x - 2 * x + 1, -1, 3.0 / n, n), MetodoIntegracion.SimpsonUnTercioMultiple);
+            Cerca(r.Integral, 3.75, 1e-10, "Tabla Simpson N=" + n);
+            if (n % 2 != 0) Verificar(r.MetodoUtilizado.Contains("3/8"), "Tabla informa combinacion N=" + n);
+        }
+        var irregular = new List<PuntoIntegracion> { new PuntoIntegracion(0, 0), new PuntoIntegracion(0.25, 0.0625), new PuntoIntegracion(1, 1), new PuntoIntegracion(2, 4) };
+        ResultadoIntegracion trapecios = integrador.CalcularTabla(irregular, MetodoIntegracion.TrapeciosMultiple);
+        Cerca(trapecios.Integral, 2.90625, 1e-12, "Trapecios con separacion variable");
+        Verificar(!trapecios.PasoUniforme, "Informar paso variable");
+        Verificar(trapecios.Aproximacion[1][0] == 0.25 && trapecios.Aproximacion[2][0] == 1, "Grafico respeta los nodos irregulares");
+        var tablaGrande = Tabla(x => Math.Sin(x), 0, 1, 300);
+        tablaGrande[150] = new PuntoIntegracion(149.5, 50);
+        ResultadoIntegracion graficoGrande = integrador.CalcularTabla(tablaGrande, MetodoIntegracion.TrapeciosMultiple);
+        Verificar(graficoGrande.Aproximacion.Count == tablaGrande.Count && graficoGrande.Aproximacion[150][0] == 149.5
+            && graficoGrande.Aproximacion[150][1] == 50, "Conservar picos y nodos de una tabla grande en el sombreado");
+        Cerca(integrador.CalcularTabla(Tabla(x => x * x, 0, 0.0001, 10000), MetodoIntegracion.TrapeciosMultiple).Integral,
+            1.0 / 3, 2e-9, "Tabla con N maximo");
+        Rechazar(() => integrador.CalcularTabla(null, MetodoIntegracion.TrapeciosMultiple), "Tabla nula");
+        Rechazar(() => integrador.CalcularTabla(new List<PuntoIntegracion>(), MetodoIntegracion.TrapeciosMultiple), "Tabla vacia");
+        Rechazar(() => integrador.CalcularTabla(Tabla(x => x, 0, 1, 0), MetodoIntegracion.TrapeciosMultiple), "Tabla con un punto");
+        Rechazar(() => integrador.CalcularTabla(Tabla(x => x, 0, 1, 10001), MetodoIntegracion.TrapeciosMultiple), "Tabla excesiva");
+        Rechazar(() => integrador.CalcularTabla(Tabla(x => x, 0, 1, 2), MetodoIntegracion.TrapeciosSimple), "Tabla simple requiere 2 puntos");
+        Rechazar(() => integrador.CalcularTabla(Tabla(x => x, 0, 1, 3), MetodoIntegracion.SimpsonUnTercioSimple), "Tabla Simpson simple requiere 3 puntos");
+        Rechazar(() => integrador.CalcularTabla(Tabla(x => x, 0, 1, 2), MetodoIntegracion.SimpsonTresOctavos), "Tabla 3/8 requiere 4 puntos");
+        Rechazar(() => integrador.CalcularTabla(Tabla(x => x, 0, 1, 1), MetodoIntegracion.SimpsonUnTercioMultiple), "Tabla Simpson requiere dos segmentos");
+        Rechazar(() => integrador.CalcularTabla(irregular, MetodoIntegracion.SimpsonUnTercioMultiple), "Simpson rechaza separacion variable");
+        Rechazar(() => integrador.CalcularTabla(irregular, MetodoIntegracion.SimpsonTresOctavos), "3/8 rechaza separacion variable");
+        Rechazar(() => integrador.CalcularTabla(Tabla(x => x, 2, -1, 2), MetodoIntegracion.TrapeciosMultiple), "Tabla desordenada");
+        Rechazar(() => integrador.CalcularTabla(Tabla(x => x, 1, 0, 2), MetodoIntegracion.TrapeciosMultiple), "X repetidas");
+        foreach (double valor in new[] { double.NaN, double.PositiveInfinity, double.NegativeInfinity })
+        {
+            Rechazar(() => integrador.CalcularTabla(new[] { new PuntoIntegracion(0, 1), new PuntoIntegracion(valor, 2) }, MetodoIntegracion.TrapeciosSimple), "X no finita");
+            Rechazar(() => integrador.CalcularTabla(new[] { new PuntoIntegracion(0, valor), new PuntoIntegracion(1, 2) }, MetodoIntegracion.TrapeciosSimple), "Y no finita");
+        }
+        Rechazar(() => integrador.CalcularTabla(new PuntoIntegracion[] { null, new PuntoIntegracion(1, 2) }, MetodoIntegracion.TrapeciosSimple), "Punto nulo");
+        Rechazar(() => integrador.CalcularTabla(Tabla(x => x, 0, 1, 2), (MetodoIntegracion)99), "Metodo de tabla inexistente");
+        Console.WriteLine("Calculos y validaciones de tablas correctos.");
+    }
+
+    private static List<PuntoIntegracion> Tabla(Func<double, double> funcion, double xi, double h, int n)
+    {
+        List<PuntoIntegracion> puntos = new List<PuntoIntegracion>();
+        for (int i = 0; i <= n; i++)
+        {
+            double x = xi + h * i;
+            puntos.Add(new PuntoIntegracion(x, funcion(x)));
+        }
+        return puntos;
+    }
+
     private static void ProbarPantalla(string carpeta)
     {
         using (Pantalla form = new Pantalla())
@@ -181,12 +253,86 @@ internal static class Unidad4Tests
             Invocar(form, "Calcular");
             ProbarRecarga(form);
             ProbarSinConexion(form);
+            ProbarEntradaTabla(form, carpeta);
             BuscarBoton(form, "Limpiar").PerformClick();
             Verificar(Campo<TextBox>(form, "txtFuncion").Text == "" && Campo<TextBox>(form, "txtXi").Text == ""
                 && Campo<TextBox>(form, "txtXd").Text == "" && Campo<ResultadoIntegracion>(form, "resultado") == null, "Limpiar entradas y resultado");
             BuscarBoton(form, "Volver").PerformClick();
             Verificar(!form.Visible, "Volver cierra la unidad");
         }
+    }
+
+    private static void ProbarEntradaTabla(Form form, string carpeta)
+    {
+        TabControl entrada = Campo<TabControl>(form, "tabEntrada");
+        DataGridView puntos = Campo<DataGridView>(form, "dgvPuntos");
+        ComboBox metodo = Campo<ComboBox>(form, "cmbMetodo");
+        entrada.SelectedIndex = 1;
+        Verificar(Campo<ResultadoIntegracion>(form, "resultado") == null, "Invalidar al cambiar de entrada");
+        metodo.SelectedIndex = 3;
+        Invocar(form, "Calcular");
+        ResultadoIntegracion r = Campo<ResultadoIntegracion>(form, "resultado");
+        Cerca(r.Integral, 8.0 / 3, 1e-12, "Calcular desde tabla sin formula");
+        Verificar(r.UsaTabla && r.ExtremoIzquierdo == 0 && r.ExtremoDerecho == 2 && r.Subintervalos == 4, "Derivar intervalo y N de las filas");
+        Verificar(Campo<Label>(form, "lblIntegral").Text == "2,6667", "Redondear resultado tabulado");
+        VerificarGrafico(form, carpeta, "tabla-simpson.png");
+        WebView2 navegador = Navegador(form);
+        Verificar(Ejecutar(navegador, "document.getElementById('etiquetaCurva').textContent === 'Datos tabulados' && ggbApplet.exists('Dato0') && ggbApplet.getVisible('Dato0') && ggbApplet.getObjectType('Dato4') === 'point' && ggbApplet.getXcoord('Dato4') === 2 && ggbApplet.getYcoord('Dato4') === 4") == "true", "Identificar y dibujar los puntos tabulados");
+        form.Size = form.MinimumSize;
+        Application.DoEvents();
+        VerificarGrafico(form, carpeta, "tabla-minimo.png");
+        Button calcular = BuscarBoton(form, "Calcular integral");
+        Rectangle boton = form.RectangleToClient(calcular.RectangleToScreen(calcular.ClientRectangle));
+        Verificar(form.ClientRectangle.Contains(boton), "Boton calcular visible en ventana minima");
+        form.ClientSize = new Size(1440, 860);
+        Application.DoEvents();
+
+        puntos.CurrentCell = puntos.Rows[4].Cells[1];
+        puntos.BeginEdit(true);
+        ((TextBox)puntos.EditingControl).Text = "5";
+        Invocar(form, "Calcular");
+        Cerca(Campo<ResultadoIntegracion>(form, "resultado").Integral, 17.0 / 6, 1e-12, "Confirmar celda en edicion antes de integrar");
+        puntos.Rows[4].Cells[1].Value = "4";
+        Verificar(Campo<ResultadoIntegracion>(form, "resultado") == null, "Editar una celda invalida el resultado");
+        puntos.CurrentCell = puntos.Rows[4].Cells[0];
+        BuscarBoton(form, "Quitar fila").PerformClick();
+        metodo.SelectedIndex = 4;
+        Invocar(form, "Calcular");
+        Cerca(Campo<ResultadoIntegracion>(form, "resultado").Integral, 1.125, 1e-12, "Quitar fila y calcular con 3/8");
+        BuscarBoton(form, "Agregar fila").PerformClick();
+        Invocar(form, "Calcular");
+        Verificar(Campo<ResultadoIntegracion>(form, "resultado") == null && Campo<Label>(form, "lblError").Text.Contains("fila 5"), "Detectar una fila incompleta");
+        puntos.Rows[4].Cells[0].Value = "2.0";
+        puntos.Rows[4].Cells[1].Value = "4,0";
+        metodo.SelectedIndex = 3;
+        Invocar(form, "Calcular");
+        Cerca(Campo<ResultadoIntegracion>(form, "resultado").Integral, 8.0 / 3, 1e-12, "Aceptar punto y coma decimal en tabla");
+        puntos.Rows[2].Cells[0].Value = "1,1";
+        Invocar(form, "Calcular");
+        Verificar(Campo<ResultadoIntegracion>(form, "resultado") == null && Campo<Label>(form, "lblError").Text.Contains("separacion"), "Explicar la separacion requerida por Simpson");
+        metodo.SelectedIndex = 1;
+        Invocar(form, "Calcular");
+        Verificar(Campo<ResultadoIntegracion>(form, "resultado") != null && Campo<Label>(form, "lblPaso").Text == "Variable", "Integrar tabla irregular con trapecios");
+        puntos.Rows[2].Cells[0].Value = "0,5";
+        Invocar(form, "Calcular");
+        Verificar(Campo<ResultadoIntegracion>(form, "resultado") == null && Campo<Label>(form, "lblError").Text.Contains("creciente"), "Explicar X repetidas");
+        puntos.Rows[2].Cells[0].Value = "1";
+        metodo.SelectedIndex = 0;
+        Invocar(form, "Calcular");
+        Verificar(Campo<Label>(form, "lblError").Text.Contains("exactamente 2"), "Explicar cantidad de puntos para metodo simple");
+        BuscarBoton(form, "Limpiar").PerformClick();
+        Verificar(puntos.Rows.Count == 1 && puntos.Rows[0].IsNewRow && Campo<ResultadoIntegracion>(form, "resultado") == null, "Limpiar tabla y resultado");
+        Invocar(form, "Calcular");
+        Verificar(Campo<Label>(form, "lblError").Text.Contains("2 y"), "Rechazar tabla vacia en pantalla");
+        puntos.Rows.Add("0", "0");
+        puntos.Rows.Add("2", "4");
+        Invocar(form, "Calcular");
+        Cerca(Campo<ResultadoIntegracion>(form, "resultado").Integral, 4, 1e-12, "Cargar nuevos datos despues de limpiar");
+        VerificarGrafico(form, carpeta, "tabla-trapecio.png");
+        entrada.SelectedIndex = 0;
+        Invocar(form, "Calcular");
+        Cerca(Campo<ResultadoIntegracion>(form, "resultado").Integral, -4, 1e-12, "Conservar la funcion al volver desde la tabla");
+        Esperar(() => Ejecutar(navegador, "document.getElementById('etiquetaCurva').textContent === 'f(x)' && !ggbApplet.exists('Dato0')") == "true", "Restaurar leyenda de funcion y quitar puntos tabulados");
     }
 
     private static void ProbarMenu()

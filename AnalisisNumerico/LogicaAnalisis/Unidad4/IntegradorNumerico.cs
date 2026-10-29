@@ -47,16 +47,72 @@ namespace LogicaAnalisis.Unidad4
 
             double[] xs = new double[n + 1];
             double[] ys = new double[n + 1];
-            List<double[]> nodos = new List<double[]>();
             for (int i = 0; i <= n; i++)
             {
                 xs[i] = i == n ? xd : xi + h * i;
                 if (i > 0 && xs[i] <= xs[i - 1]) throw new ArgumentException("Los nodos no se pueden distinguir con la precision disponible.");
                 ys[i] = Evaluar(evaluador, xs[i]);
-                nodos.Add(new[] { xs[i], ys[i] });
                 if (i < n) Evaluar(evaluador, xi + h * (i + 0.5));
             }
 
+            List<double[]> curva = new List<double[]>();
+            for (int i = 0; i <= 400; i++)
+            {
+                double x = i == 400 ? xd : xi + (xd - xi) * (i / 400.0);
+                curva.Add(new[] { x, Evaluar(evaluador, x) });
+            }
+            return IntegrarNodos(funcion, xs, ys, metodo, curva, false, true);
+        }
+
+        public ResultadoIntegracion CalcularTabla(IList<PuntoIntegracion> puntos, MetodoIntegracion metodo)
+        {
+            if (!Enum.IsDefined(typeof(MetodoIntegracion), metodo))
+                throw new ArgumentException("Seleccione un metodo valido.");
+            if (puntos == null || puntos.Count < 2 || puntos.Count > MaximoSubintervalos + 1)
+                throw new ArgumentException("Ingrese entre 2 y " + (MaximoSubintervalos + 1) + " puntos en la tabla.");
+
+            int n = puntos.Count - 1;
+            int requeridos = metodo == MetodoIntegracion.TrapeciosSimple ? 2
+                : metodo == MetodoIntegracion.SimpsonUnTercioSimple ? 3
+                : metodo == MetodoIntegracion.SimpsonTresOctavos ? 4 : 0;
+            if (requeridos != 0 && puntos.Count != requeridos)
+                throw new ArgumentException("El metodo seleccionado requiere exactamente " + requeridos + " puntos en la tabla.");
+            if (metodo == MetodoIntegracion.SimpsonUnTercioMultiple && n < 2)
+                throw new ArgumentException("Simpson 1/3 multiple requiere al menos 3 puntos.");
+
+            double[] xs = new double[puntos.Count], ys = new double[puntos.Count];
+            List<double[]> curva = new List<double[]>();
+            for (int i = 0; i < puntos.Count; i++)
+            {
+                PuntoIntegracion punto = puntos[i];
+                if (punto == null || !EsFinito(punto.X) || !EsFinito(punto.Y))
+                    throw new ArgumentException("X y f(x) deben ser numeros finitos en la fila " + (i + 1) + ".");
+                xs[i] = punto.X;
+                ys[i] = punto.Y;
+                if (i > 0 && (xs[i] <= xs[i - 1] || !EsFinito(xs[i] - xs[i - 1])))
+                    throw new ArgumentException("Las X deben estar en orden creciente, sin repetirse. Revise la fila " + (i + 1) + ".");
+                curva.Add(new[] { xs[i], ys[i] });
+            }
+
+            double h = (xs[n] - xs[0]) / n;
+            if (!EsFinito(h) || h <= 0)
+                throw new ArgumentException("El intervalo de la tabla excede la precision numerica disponible.");
+            bool uniforme = true;
+            for (int i = 1; i <= n; i++)
+                if (Math.Abs((xs[i] - xs[i - 1]) / h - 1) > 1e-6) uniforme = false;
+            if (!uniforme && metodo != MetodoIntegracion.TrapeciosMultiple)
+                throw new ArgumentException("Los metodos de Simpson requieren la misma separacion entre los valores de X.");
+
+            return IntegrarNodos(null, xs, ys, metodo, curva, true, uniforme);
+        }
+
+        private static ResultadoIntegracion IntegrarNodos(string funcion, double[] xs, double[] ys,
+            MetodoIntegracion metodo, List<double[]> curva, bool usaTabla, bool pasoUniforme)
+        {
+            int n = xs.Length - 1;
+            double xi = xs[0], xd = xs[n], h = (xd - xi) / n;
+            List<double[]> nodos = new List<double[]>();
+            for (int i = 0; i <= n; i++) nodos.Add(new[] { xs[i], ys[i] });
             List<Tramo> tramos = new List<Tramo>();
             string nombre;
             if (metodo == MetodoIntegracion.TrapeciosSimple || metodo == MetodoIntegracion.TrapeciosMultiple)
@@ -84,12 +140,13 @@ namespace LogicaAnalisis.Unidad4
             double integral = 0, compensacion = 0;
             foreach (Tramo tramo in tramos)
             {
+                double paso = (xs[tramo.Inicio + tramo.Grado] - xs[tramo.Inicio]) / tramo.Grado;
                 double[] pesos = tramo.Grado == 1 ? new[] { 0.5, 0.5 }
                     : tramo.Grado == 2 ? new[] { 1.0 / 3, 4.0 / 3, 1.0 / 3 }
                     : new[] { 3.0 / 8, 9.0 / 8, 9.0 / 8, 3.0 / 8 };
                 for (int j = 0; j <= tramo.Grado; j++)
                 {
-                    double aporte = (ys[tramo.Inicio + j] * h) * pesos[j] - compensacion;
+                    double aporte = (ys[tramo.Inicio + j] * paso) * pesos[j] - compensacion;
                     double siguiente = integral + aporte;
                     compensacion = (siguiente - integral) - aporte;
                     integral = siguiente;
@@ -97,21 +154,15 @@ namespace LogicaAnalisis.Unidad4
             }
             if (!EsFinito(integral)) throw new ArgumentException("La integral excede el rango numerico permitido.");
 
-            List<double[]> curva = new List<double[]>();
-            for (int i = 0; i <= 400; i++)
-            {
-                double x = i == 400 ? xd : xi + (xd - xi) * (i / 400.0);
-                curva.Add(new[] { x, Evaluar(evaluador, x) });
-            }
             List<double[]> aproximacion = new List<double[]>();
-            // Mantener los limites entre tramos en la vista, sin crear miles de objetos en GeoGebra.
-            if (tramos.Count <= 100)
+            // En tablas se conserva cada nodo; para muchas filas se reduce el muestreo entre nodos.
+            if (tramos.Count <= 100 || usaTabla)
             {
                 foreach (Tramo tramo in tramos)
                 {
-                    int muestras = tramo.Grado == 1 ? 1 : 12;
+                    int muestras = tramo.Grado == 1 ? 1 : tramos.Count > 100 ? tramo.Grado : 12;
                     for (int j = 0; j < muestras; j++)
-                        aproximacion.Add(Muestrear(tramo, j * tramo.Grado / (double)muestras, xs, ys, h));
+                        aproximacion.Add(Muestrear(tramo, j * tramo.Grado / (double)muestras, xs, ys));
                 }
             }
             else
@@ -121,20 +172,22 @@ namespace LogicaAnalisis.Unidad4
                 {
                     double posicion = n * (i / 600.0);
                     while (indice < tramos.Count - 1 && posicion >= tramos[indice].Inicio + tramos[indice].Grado) indice++;
-                    aproximacion.Add(Muestrear(tramos[indice], posicion - tramos[indice].Inicio, xs, ys, h));
+                    aproximacion.Add(Muestrear(tramos[indice], posicion - tramos[indice].Inicio, xs, ys));
                 }
             }
             aproximacion.Add(new[] { xd, ys[n] });
             return new ResultadoIntegracion
             {
                 Funcion = funcion, ExtremoIzquierdo = xi, ExtremoDerecho = xd, Subintervalos = n, Paso = h,
+                UsaTabla = usaTabla, PasoUniforme = pasoUniforme,
                 Integral = integral, MetodoUtilizado = nombre, Curva = curva.AsReadOnly(),
                 Aproximacion = aproximacion.AsReadOnly(), Nodos = nodos.AsReadOnly()
             };
         }
 
-        private static double[] Muestrear(Tramo tramo, double t, double[] xs, double[] ys, double h)
+        private static double[] Muestrear(Tramo tramo, double t, double[] xs, double[] ys)
         {
+            double h = (xs[tramo.Inicio + tramo.Grado] - xs[tramo.Inicio]) / tramo.Grado;
             double y = 0;
             for (int j = 0; j <= tramo.Grado; j++)
             {

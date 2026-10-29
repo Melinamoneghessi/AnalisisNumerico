@@ -17,7 +17,7 @@
     </style>
 </head>
 <body>
-    <div id="leyenda"><span><i class="curva"></i>f(x)</span><span><i class="aproximacion"></i>Aproximacion</span></div>
+    <div id="leyenda"><span><i class="curva"></i><span id="etiquetaCurva">f(x)</span></span><span><i class="aproximacion"></i>Aproximacion</span></div>
     <div id="grafico"><div id="ggb-element"></div></div>
     <div id="estado" role="status"><p id="mensaje">Cargando GeoGebra...</p><button id="reintentar" type="button" hidden>Reintentar</button></div>
     <script>
@@ -79,6 +79,7 @@
                 api.newConstruction();
                 api.setAxesVisible(true, true); api.setGridVisible(true); api.setAxisLabels(1, "x", "y", "");
                 const visibles = new Set();
+                document.getElementById("etiquetaCurva").textContent = datosPendientes && datosPendientes.esTabla ? "Datos tabulados" : "f(x)";
                 if (datosPendientes) {
                     separarRegiones(datosPendientes.aproximacion).forEach(function (tramo, indice) {
                         const nombre = "region" + indice;
@@ -92,12 +93,18 @@
                         api.setLayer(nombre, 0); visibles.add(nombre);
                     });
                     if (datosPendientes.nodos) datosPendientes.nodos.forEach(function (p, i) {
+                        if (datosPendientes.esTabla) {
+                            const nombrePunto = "Dato" + i;
+                            crear(nombrePunto, punto(p));
+                            api.setColor(nombrePunto, 30, 140, 125); api.setPointSize(nombrePunto, 4);
+                            api.setLayer(nombrePunto, 3); visibles.add(nombrePunto);
+                        }
                         if (p[1] === 0) return;
                         const nombre = "division" + i;
                         crear(nombre, "Segment(" + punto([p[0], 0]) + "," + punto(p) + ")");
                         api.setColor(nombre, 185, 150, 165); api.setLineThickness(nombre, 1); visibles.add(nombre);
                     });
-                    // Las dos curvas usan valores del mismo evaluador que calcula la integral.
+                    // La curva representa la funcion o los datos cargados, segun el modo de entrada.
                     crear("curva", "Polyline(" + lista(datosPendientes.curva) + ")");
                     api.setColor("curva", 30, 140, 125); api.setLineThickness("curva", 5); api.setLayer("curva", 2);
                     crear("aproximacion", "Polyline(" + lista(datosPendientes.aproximacion) + ")");

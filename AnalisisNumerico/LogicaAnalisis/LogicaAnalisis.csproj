@@ -87,6 +87,7 @@
     <Compile Include="Unidad3\ResultadoAjuste.cs" />
     <Compile Include="Unidad3\MetodoAjusteCurvas.cs" />
     <Compile Include="Unidad4\MetodoIntegracion.cs" />
+    <Compile Include="Unidad4\PuntoIntegracion.cs" />
     <Compile Include="Unidad4\ResultadoIntegracion.cs" />
     <Compile Include="Unidad4\IntegradorNumerico.cs" />
   </ItemGroup>

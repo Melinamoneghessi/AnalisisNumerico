@@ -10,6 +10,8 @@ namespace LogicaAnalisis.Unidad4
         public double ExtremoDerecho { get; internal set; }
         public int Subintervalos { get; internal set; }
         public double Paso { get; internal set; }
+        public bool PasoUniforme { get; internal set; }
+        public bool UsaTabla { get; internal set; }
         public double Integral { get; internal set; }
         public IReadOnlyList<double[]> Curva { get; internal set; }
         public IReadOnlyList<double[]> Aproximacion { get; internal set; }

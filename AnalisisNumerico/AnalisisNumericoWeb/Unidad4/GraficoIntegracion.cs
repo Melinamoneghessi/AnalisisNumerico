@@ -145,6 +145,7 @@ namespace AnalisisNumericoWeb.Unidad4
             double margenY = Math.Max(0.1, (maximoY / 2 - minimoY / 2) * 0.3);
             return new JavaScriptSerializer().Serialize(new
             {
+                esTabla = resultado.UsaTabla,
                 curva = resultado.Curva, aproximacion = resultado.Aproximacion,
                 nodos = resultado.Nodos.Count <= 61 ? resultado.Nodos : null,
                 limites = new[] { AmpliarLimite(resultado.ExtremoIzquierdo, -margenX), AmpliarLimite(resultado.ExtremoDerecho, margenX),
