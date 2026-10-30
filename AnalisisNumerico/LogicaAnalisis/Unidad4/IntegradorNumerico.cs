@@ -12,10 +12,34 @@ namespace LogicaAnalisis.Unidad4
 
         public ResultadoIntegracion Calcular(string funcion, double xi, double xd, int n, MetodoIntegracion metodo)
         {
-            if (!Enum.IsDefined(typeof(MetodoIntegracion), metodo))
-                throw new ArgumentException("Seleccione un metodo valido.");
-            if (!EsFinito(xi) || !EsFinito(xd) || xi >= xd)
-                throw new ArgumentException("El extremo izquierdo debe ser menor que el derecho; ambos deben ser finitos.");
+            Calculo evaluador = CrearEvaluador(funcion);
+            return CalcularFuncion(funcion.Trim().Replace(',', '.'), x => Evaluar(evaluador, x), xi, xd, n, metodo);
+        }
+
+        public ResultadoIntegracion CalcularEntreCurvas(string funcion, string segundaFuncion, double xi, double xd,
+            int n, MetodoIntegracion metodo)
+        {
+            Calculo primera = CrearEvaluador(funcion), segunda = CrearEvaluador(segundaFuncion);
+            ResultadoIntegracion resultado = CalcularFuncion(funcion.Trim(), x =>
+            {
+                double distancia = Math.Abs(Evaluar(primera, x) - Evaluar(segunda, x));
+                if (!EsFinito(distancia)) throw new ArgumentException("La separacion entre las funciones excede el rango numerico permitido.");
+                return distancia;
+            }, xi, xd, n, metodo);
+            List<double[]> curva = new List<double[]>(), segundaCurva = new List<double[]>();
+            foreach (double[] punto in resultado.Curva)
+            {
+                curva.Add(new[] { punto[0], Evaluar(primera, punto[0]) });
+                segundaCurva.Add(new[] { punto[0], Evaluar(segunda, punto[0]) });
+            }
+            resultado.Curva = curva.AsReadOnly();
+            resultado.SegundaCurva = segundaCurva.AsReadOnly();
+            resultado.SegundaFuncion = segundaFuncion.Trim();
+            return resultado;
+        }
+
+        private static Calculo CrearEvaluador(string funcion)
+        {
             if (string.IsNullOrWhiteSpace(funcion)) throw new ArgumentException("Ingrese una funcion.");
             funcion = funcion.Trim().Replace(',', '.');
             string expresion = Regex.Replace(funcion.ToLowerInvariant(), @"\bln\b", "log");
@@ -34,7 +58,16 @@ namespace LogicaAnalisis.Unidad4
             {
                 throw new ArgumentException("La funcion tiene una sintaxis invalida.", ex);
             }
+            return evaluador;
+        }
 
+        private static ResultadoIntegracion CalcularFuncion(string funcion, Func<double, double> evaluar,
+            double xi, double xd, int n, MetodoIntegracion metodo)
+        {
+            if (!Enum.IsDefined(typeof(MetodoIntegracion), metodo))
+                throw new ArgumentException("Seleccione un metodo valido.");
+            if (!EsFinito(xi) || !EsFinito(xd) || xi >= xd)
+                throw new ArgumentException("El extremo izquierdo debe ser menor que el derecho; ambos deben ser finitos.");
             if (metodo == MetodoIntegracion.TrapeciosSimple) n = 1;
             if (metodo == MetodoIntegracion.SimpsonUnTercioSimple) n = 2;
             if (metodo == MetodoIntegracion.SimpsonTresOctavos) n = 3;
@@ -51,15 +84,15 @@ namespace LogicaAnalisis.Unidad4
             {
                 xs[i] = i == n ? xd : xi + h * i;
                 if (i > 0 && xs[i] <= xs[i - 1]) throw new ArgumentException("Los nodos no se pueden distinguir con la precision disponible.");
-                ys[i] = Evaluar(evaluador, xs[i]);
-                if (i < n) Evaluar(evaluador, xi + h * (i + 0.5));
+                ys[i] = evaluar(xs[i]);
+                if (i < n) evaluar(xi + h * (i + 0.5));
             }
 
             List<double[]> curva = new List<double[]>();
             for (int i = 0; i <= 400; i++)
             {
                 double x = i == 400 ? xd : xi + (xd - xi) * (i / 400.0);
-                curva.Add(new[] { x, Evaluar(evaluador, x) });
+                curva.Add(new[] { x, evaluar(x) });
             }
             return IntegrarNodos(funcion, xs, ys, metodo, curva, false, true);
         }

@@ -12,7 +12,11 @@ namespace AnalisisNumericoWeb.Unidad4
         private readonly IntegradorNumerico integrador = new IntegradorNumerico();
         private readonly CultureInfo cultura = CultureInfo.GetCultureInfo("es-AR");
         private ComboBox cmbMetodo;
-        private TextBox txtFuncion, txtXi, txtXd;
+        private TextBox txtFuncion, txtSegundaFuncion, txtXi, txtXd;
+        private CheckBox chkDosFunciones;
+        private TableLayoutPanel camposFuncion;
+        private Label lblSegundaFuncion, lblTituloIntegral;
+        private Button btnCalcular;
         private NumericUpDown nudSubintervalos;
         private TabControl tabEntrada;
         private DataGridView dgvPuntos;
@@ -100,24 +104,47 @@ namespace AnalisisNumericoWeb.Unidad4
             TabPage puntos = new TabPage("Tabla de valores") { BackColor = Color.White, Padding = new Padding(6) };
             tabEntrada.TabPages.Add(funcion);
             tabEntrada.TabPages.Add(puntos);
-            tabEntrada.SelectedIndexChanged += (s, e) => LimpiarResultados();
-            TableLayoutPanel camposFuncion = new TableLayoutPanel
+            tabEntrada.SelectedIndexChanged += (s, e) => ActualizarModoFunciones();
+            camposFuncion = new TableLayoutPanel
             {
-                Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 9, Margin = new Padding(0)
+                Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 7, Margin = new Padding(0)
             };
             camposFuncion.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            for (int i = 0; i < 8; i++) camposFuncion.RowStyles.Add(new RowStyle(SizeType.Absolute, i % 2 == 0 ? 24 : 30));
+            foreach (int altura in new[] { 28, 30, 0, 0, 54, 34 })
+                camposFuncion.RowStyles.Add(new RowStyle(SizeType.Absolute, altura));
             camposFuncion.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            camposFuncion.Controls.Add(CrearLabel("Funcion f(x)"), 0, 0);
+            chkDosFunciones = new CheckBox { Text = "Graficar dos funciones", Dock = DockStyle.Fill, Margin = new Padding(0), ForeColor = Color.FromArgb(90, 50, 65) };
+            chkDosFunciones.CheckedChanged += (s, e) => ActualizarModoFunciones();
+            TableLayoutPanel encabezadoFuncion = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Margin = new Padding(0) };
+            encabezadoFuncion.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 40));
+            encabezadoFuncion.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            encabezadoFuncion.Controls.Add(CrearLabel("f(x)"), 0, 0);
+            encabezadoFuncion.Controls.Add(chkDosFunciones, 1, 0);
+            camposFuncion.Controls.Add(encabezadoFuncion, 0, 0);
             txtFuncion = CrearEntradaTexto("1/x + x");
             camposFuncion.Controls.Add(txtFuncion, 0, 1);
-            camposFuncion.Controls.Add(CrearLabel("Extremo izquierdo (xi)"), 0, 2);
+            lblSegundaFuncion = CrearLabel("Funcion g(x)");
+            lblSegundaFuncion.Visible = false;
+            camposFuncion.Controls.Add(lblSegundaFuncion, 0, 2);
+            txtSegundaFuncion = CrearEntradaTexto("x");
+            txtSegundaFuncion.Visible = false;
+            camposFuncion.Controls.Add(txtSegundaFuncion, 0, 3);
+            TableLayoutPanel extremos = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 2, Margin = new Padding(0) };
+            extremos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            extremos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            extremos.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+            extremos.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+            extremos.Controls.Add(CrearLabel("Izquierdo (xi)"), 0, 0);
+            extremos.Controls.Add(CrearLabel("Derecho (xd)"), 1, 0);
             txtXi = CrearEntradaTexto("0,5");
-            camposFuncion.Controls.Add(txtXi, 0, 3);
-            camposFuncion.Controls.Add(CrearLabel("Extremo derecho (xd)"), 0, 4);
+            extremos.Controls.Add(txtXi, 0, 1);
             txtXd = CrearEntradaTexto("3,5");
-            camposFuncion.Controls.Add(txtXd, 0, 5);
-            camposFuncion.Controls.Add(CrearLabel("Subintervalos (N)"), 0, 6);
+            extremos.Controls.Add(txtXd, 1, 1);
+            camposFuncion.Controls.Add(extremos, 0, 4);
+            TableLayoutPanel segmentos = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Margin = new Padding(0) };
+            segmentos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 66));
+            segmentos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
+            segmentos.Controls.Add(CrearLabel("Subintervalos (N)"), 0, 0);
             nudSubintervalos = new NumericUpDown
             {
                 Dock = DockStyle.Fill, Minimum = 1, Maximum = IntegradorNumerico.MaximoSubintervalos,
@@ -129,7 +156,8 @@ namespace AnalisisNumericoWeb.Unidad4
                 if (nudSubintervalos.Enabled) ultimoN = nudSubintervalos.Value;
                 LimpiarResultados();
             };
-            camposFuncion.Controls.Add(nudSubintervalos, 0, 7);
+            segmentos.Controls.Add(nudSubintervalos, 1, 0);
+            camposFuncion.Controls.Add(segmentos, 0, 5);
             funcion.Controls.Add(camposFuncion);
             puntos.Controls.Add(CrearTablaPuntos());
             tabla.Controls.Add(tabEntrada, 0, 3);
@@ -137,11 +165,11 @@ namespace AnalisisNumericoWeb.Unidad4
             lblError.ForeColor = Color.Firebrick;
             lblError.Font = new Font("Segoe UI", 9);
             tabla.Controls.Add(lblError, 0, 4);
-            Button calcular = CrearBoton("Calcular integral", true);
-            calcular.Dock = DockStyle.Fill;
-            calcular.Click += (s, e) => Calcular();
-            tabla.Controls.Add(calcular, 0, 5);
-            AcceptButton = calcular;
+            btnCalcular = CrearBoton("Calcular integral", true);
+            btnCalcular.Dock = DockStyle.Fill;
+            btnCalcular.Click += (s, e) => Calcular();
+            tabla.Controls.Add(btnCalcular, 0, 5);
+            AcceptButton = btnCalcular;
             Button limpiar = CrearBoton("Limpiar", false);
             limpiar.Dock = DockStyle.Fill;
             limpiar.Click += (s, e) =>
@@ -155,6 +183,7 @@ namespace AnalisisNumericoWeb.Unidad4
                 else
                 {
                     txtFuncion.Clear(); txtXi.Clear(); txtXd.Clear();
+                    txtSegundaFuncion.Clear();
                     txtFuncion.Focus();
                 }
                 LimpiarResultados();
@@ -245,6 +274,18 @@ namespace AnalisisNumericoWeb.Unidad4
             LimpiarResultados();
         }
 
+        private void ActualizarModoFunciones()
+        {
+            bool dos = chkDosFunciones.Checked;
+            lblSegundaFuncion.Visible = txtSegundaFuncion.Visible = dos;
+            camposFuncion.RowStyles[2].Height = dos ? 24 : 0;
+            camposFuncion.RowStyles[3].Height = dos ? 30 : 0;
+            bool area = dos && tabEntrada.SelectedIndex == 0;
+            if (btnCalcular != null) btnCalcular.Text = area ? "Calcular area y graficar" : "Calcular integral";
+            if (lblTituloIntegral != null) lblTituloIntegral.Text = area ? "Area entre curvas" : "Integral aproximada";
+            LimpiarResultados();
+        }
+
         private TableLayoutPanel CrearResultados()
         {
             TableLayoutPanel tabla = CrearSeccion();
@@ -252,7 +293,8 @@ namespace AnalisisNumericoWeb.Unidad4
             tabla.RowCount = alturas.Length;
             foreach (int altura in alturas) tabla.RowStyles.Add(altura < 0 ? new RowStyle(SizeType.Percent, 100) : new RowStyle(SizeType.Absolute, altura));
             tabla.Controls.Add(CrearLabel("Resultados", 17, true), 0, 0);
-            tabla.Controls.Add(CrearLabel("Integral aproximada"), 0, 1);
+            lblTituloIntegral = CrearLabel("Integral aproximada");
+            tabla.Controls.Add(lblTituloIntegral, 0, 1);
             lblIntegral = CrearLabel("-", 22, true);
             lblIntegral.AutoEllipsis = true;
             tabla.Controls.Add(lblIntegral, 0, 2);
@@ -304,6 +346,14 @@ namespace AnalisisNumericoWeb.Unidad4
                 {
                     dgvPuntos.EndEdit();
                     resultado = integrador.CalcularTabla(LeerPuntos(), metodo);
+                }
+                else if (chkDosFunciones.Checked)
+                {
+                    if (string.IsNullOrWhiteSpace(txtSegundaFuncion.Text))
+                        throw new ArgumentException("Ingrese la segunda funcion g(x).");
+                    resultado = integrador.CalcularEntreCurvas(txtFuncion.Text, txtSegundaFuncion.Text,
+                        LeerNumero(txtXi, "extremo izquierdo"), LeerNumero(txtXd, "extremo derecho"),
+                        (int)nudSubintervalos.Value, metodo);
                 }
                 else
                     resultado = integrador.Calcular(txtFuncion.Text, LeerNumero(txtXi, "extremo izquierdo"),

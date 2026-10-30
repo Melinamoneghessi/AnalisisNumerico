@@ -132,12 +132,13 @@ namespace AnalisisNumericoWeb.Unidad4
         internal static string CrearDatos(ResultadoIntegracion resultado)
         {
             if (resultado == null) return "null";
-            double minimoY = 0, maximoY = 0;
+            double minimoY = resultado.EsAreaEntreCurvas ? resultado.Curva[0][1] : 0;
+            double maximoY = minimoY;
             foreach (double[] punto in resultado.Curva)
             {
                 minimoY = Math.Min(minimoY, punto[1]); maximoY = Math.Max(maximoY, punto[1]);
             }
-            foreach (double[] punto in resultado.Aproximacion)
+            foreach (double[] punto in resultado.EsAreaEntreCurvas ? resultado.SegundaCurva : resultado.Aproximacion)
             {
                 minimoY = Math.Min(minimoY, punto[1]); maximoY = Math.Max(maximoY, punto[1]);
             }
@@ -146,8 +147,9 @@ namespace AnalisisNumericoWeb.Unidad4
             return new JavaScriptSerializer().Serialize(new
             {
                 esTabla = resultado.UsaTabla,
+                entreCurvas = resultado.EsAreaEntreCurvas, segundaCurva = resultado.SegundaCurva,
                 curva = resultado.Curva, aproximacion = resultado.Aproximacion,
-                nodos = resultado.Nodos.Count <= 61 ? resultado.Nodos : null,
+                nodos = !resultado.EsAreaEntreCurvas && resultado.Nodos.Count <= 61 ? resultado.Nodos : null,
                 limites = new[] { AmpliarLimite(resultado.ExtremoIzquierdo, -margenX), AmpliarLimite(resultado.ExtremoDerecho, margenX),
                     AmpliarLimite(minimoY, -margenY), AmpliarLimite(maximoY, margenY) }
             });

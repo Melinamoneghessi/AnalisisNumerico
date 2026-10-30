@@ -24,6 +24,7 @@ internal static class Unidad4Tests
         {
             ProbarCalculos();
             ProbarCalculosTabla();
+            ProbarCalculosEntreCurvas();
             if (args.Length < 2 || args[1] != "True")
             {
                 Application.EnableVisualStyles();
@@ -178,6 +179,33 @@ internal static class Unidad4Tests
         return puntos;
     }
 
+    private static void ProbarCalculosEntreCurvas()
+    {
+        IntegradorNumerico integrador = new IntegradorNumerico();
+        foreach (MetodoIntegracion metodo in Enum.GetValues(typeof(MetodoIntegracion)))
+        {
+            ResultadoIntegracion r = integrador.CalcularEntreCurvas("2", "5", -1, 2, 10, metodo);
+            Cerca(r.Integral, 9, 1e-12, "Area entre constantes: " + metodo);
+            Cerca(integrador.CalcularEntreCurvas("5", "2", -1, 2, 10, metodo).Integral, 9, 1e-12, "Invertir orden de funciones: " + metodo);
+            Cerca(integrador.CalcularEntreCurvas("2*x+1", "x", 0, 2, 10, metodo).Integral, 4, 1e-12, "Area entre rectas: " + metodo);
+            Cerca(integrador.CalcularEntreCurvas("-5", "-2", 0, 2, 10, metodo).Integral, 6, 1e-12, "Dos curvas bajo el eje: " + metodo);
+            Cerca(integrador.CalcularEntreCurvas("x^2", "x^2", -1, 1, 10, metodo).Integral, 0, 0, "Curvas coincidentes: " + metodo);
+            Verificar(r.EsAreaEntreCurvas && !r.UsaTabla && r.Curva.Count == 401 && r.SegundaCurva.Count == 401, "Conservar dos curvas originales: " + metodo);
+            Verificar(r.Curva[200][1] == 2 && r.SegundaCurva[200][1] == 5, "Graficar originales y no la diferencia: " + metodo);
+        }
+        ResultadoIntegracion ejercicio = integrador.CalcularEntreCurvas("x^4-4*x^2+2", "x^3-3*x+3", -1.95820988, 2.26666543, 25, MetodoIntegracion.SimpsonUnTercioMultiple);
+        Cerca(ejercicio.Integral, 13.006888784068645, 1e-9, "Ejercicio 4 con 25 subintervalos");
+        Verificar(ejercicio.Subintervalos == 25 && ejercicio.MetodoUtilizado.Contains("combinado"), "Conservar Simpson combinado entre curvas");
+        Cerca(integrador.CalcularEntreCurvas("x", "0", -1, 1, 8, MetodoIntegracion.SimpsonUnTercioMultiple).Integral, 1, 1e-12, "Sumar areas a ambos lados de un cruce");
+        Cerca(integrador.CalcularEntreCurvas("x", "0,123", -1, 1, 1000, MetodoIntegracion.SimpsonUnTercioMultiple).Integral, 1.015129, 2e-6, "Cruce fuera de los nodos");
+        Rechazar(() => integrador.CalcularEntreCurvas("x", "", 0, 1, 10, MetodoIntegracion.TrapeciosMultiple), "Segunda funcion vacia");
+        Rechazar(() => integrador.CalcularEntreCurvas("x", "x+", 0, 1, 10, MetodoIntegracion.TrapeciosMultiple), "Segunda funcion invalida");
+        Rechazar(() => integrador.CalcularEntreCurvas("x", "1/x", -1, 1, 10, MetodoIntegracion.TrapeciosMultiple), "Dominio de la segunda funcion");
+        Rechazar(() => integrador.CalcularEntreCurvas("1/x", "x", -1, 1, 10, MetodoIntegracion.TrapeciosMultiple), "Dominio de la primera funcion");
+        Rechazar(() => integrador.CalcularEntreCurvas("x", "2*x", 1, 0, 10, MetodoIntegracion.TrapeciosMultiple), "Intervalo entre curvas invertido");
+        Console.WriteLine("Calculos de areas entre curvas correctos.");
+    }
+
     private static void ProbarPantalla(string carpeta)
     {
         using (Pantalla form = new Pantalla())
@@ -254,6 +282,7 @@ internal static class Unidad4Tests
             ProbarRecarga(form);
             ProbarSinConexion(form);
             ProbarEntradaTabla(form, carpeta);
+            ProbarDosFunciones(form, carpeta);
             BuscarBoton(form, "Limpiar").PerformClick();
             Verificar(Campo<TextBox>(form, "txtFuncion").Text == "" && Campo<TextBox>(form, "txtXi").Text == ""
                 && Campo<TextBox>(form, "txtXd").Text == "" && Campo<ResultadoIntegracion>(form, "resultado") == null, "Limpiar entradas y resultado");
@@ -335,6 +364,81 @@ internal static class Unidad4Tests
         Esperar(() => Ejecutar(navegador, "document.getElementById('etiquetaCurva').textContent === 'f(x)' && !ggbApplet.exists('Dato0')") == "true", "Restaurar leyenda de funcion y quitar puntos tabulados");
     }
 
+    private static void ProbarDosFunciones(Form form, string carpeta)
+    {
+        CheckBox dos = Campo<CheckBox>(form, "chkDosFunciones");
+        TextBox f = Campo<TextBox>(form, "txtFuncion"), g = Campo<TextBox>(form, "txtSegundaFuncion");
+        ComboBox metodo = Campo<ComboBox>(form, "cmbMetodo");
+        dos.Checked = true;
+        Verificar(g.Visible && Campo<ResultadoIntegracion>(form, "resultado") == null, "Mostrar g(x) e invalidar al activar dos curvas");
+        Verificar(Campo<Label>(form, "lblTituloIntegral").Text == "Area entre curvas", "Identificar el resultado como area");
+        f.Text = "x^4-4*x^2+2";
+        g.Text = "x^3-3*x+3";
+        Campo<TextBox>(form, "txtXi").Text = "-1,95820988";
+        Campo<TextBox>(form, "txtXd").Text = "2,26666543";
+        metodo.SelectedIndex = 3;
+        Campo<NumericUpDown>(form, "nudSubintervalos").Value = 25;
+        BuscarBoton(form, "Calcular area y graficar").PerformClick();
+        Verificar(Campo<Label>(form, "lblIntegral").Text == "13,0069", "Resultado del ejercicio con dos funciones");
+        VerificarGrafico(form, carpeta, "dos-funciones-ejercicio4.png", true);
+        WebView2 navegador = Navegador(form);
+        Verificar(Ejecutar(navegador, "!document.getElementById('leyendaSegunda').hidden && !document.getElementById('leyendaArea').hidden && document.getElementById('leyendaAproximacion').hidden && !ggbApplet.exists('aproximacion') && !ggbApplet.exists('division0')") == "true", "Leyenda y sombreado de dos funciones");
+        Cerca(Numero(navegador, "ggbApplet.getValue('Area(region0)')"), 13.007417, 0.002, "Sombrear entre las curvas del ejercicio");
+        ProbarNavegacion(form);
+        form.Size = form.MinimumSize;
+        Application.DoEvents();
+        VerificarGrafico(form, carpeta, "dos-funciones-minimo.png", true);
+        Rectangle campoG = form.RectangleToClient(g.RectangleToScreen(g.ClientRectangle));
+        Verificar(form.ClientRectangle.Contains(campoG), "Segunda funcion visible en ventana minima");
+        NumericUpDown entradaN = Campo<NumericUpDown>(form, "nudSubintervalos");
+        Control campos = Campo<Control>(form, "camposFuncion");
+        Rectangle campoN = campos.RectangleToClient(entradaN.RectangleToScreen(entradaN.ClientRectangle));
+        Verificar(campos.ClientRectangle.Contains(campoN), "Subintervalos completos en ventana minima");
+        form.ClientSize = new Size(1440, 860);
+        Application.DoEvents();
+        g.Text = "";
+        Invocar(form, "Calcular");
+        Verificar(Campo<ResultadoIntegracion>(form, "resultado") == null && Campo<Label>(form, "lblError").Text.Contains("g(x)"), "Pedir la segunda funcion");
+
+        f.Text = "x"; g.Text = "0,123";
+        Campo<TextBox>(form, "txtXi").Text = "-1";
+        Campo<TextBox>(form, "txtXd").Text = "1";
+        Campo<NumericUpDown>(form, "nudSubintervalos").Value = 1000;
+        Invocar(form, "Calcular");
+        Cerca(Campo<ResultadoIntegracion>(form, "resultado").Integral, 1.015129, 2e-6, "Area sin cancelar al cruzarse las funciones");
+        VerificarGrafico(form, carpeta, "dos-funciones-cruce.png", true);
+        Verificar(Ejecutar(navegador, "ggbApplet.exists('region1') && ggbApplet.getVisible('region1')") == "true", "Separar el sombreado en un cruce entre muestras");
+        Cerca(Numero(navegador, "ggbApplet.getValue('Area(region0)+Area(region1)')"), 1.015129, 1e-8, "Regiones sin autointerseccion");
+
+        f.Text = "1000"; g.Text = "1001";
+        Campo<TextBox>(form, "txtXi").Text = "0";
+        Campo<TextBox>(form, "txtXd").Text = "1";
+        Invocar(form, "Calcular");
+        VerificarGrafico(form, carpeta, "dos-funciones-desplazadas.png", true);
+        Cerca(Numero(navegador, "ggbApplet.getValue('Area(region0)')"), 1, 1e-8, "El sombreado no llega al eje X");
+        Verificar(Numero(navegador, "JSON.parse(ggbApplet.getViewProperties(1)).yMin") > 990, "Ajustar escala a las dos curvas");
+        g.Text = "1000";
+        Invocar(form, "Calcular");
+        Esperar(() => Ejecutar(navegador, "ggbApplet.exists('segundaCurva') && !ggbApplet.exists('region0') && document.getElementById('estado').hidden") == "true", "Curvas coincidentes sin poligono degenerado");
+        Cerca(Campo<ResultadoIntegracion>(form, "resultado").Integral, 0, 0, "Area nula en pantalla");
+
+        Campo<TabControl>(form, "tabEntrada").SelectedIndex = 1;
+        Verificar(Campo<Label>(form, "lblTituloIntegral").Text == "Integral aproximada", "Modo tabla independiente de la segunda funcion");
+        metodo.SelectedIndex = 0;
+        Invocar(form, "Calcular");
+        Cerca(Campo<ResultadoIntegracion>(form, "resultado").Integral, 4, 1e-12, "Tabla conserva su propio calculo");
+        Campo<TabControl>(form, "tabEntrada").SelectedIndex = 0;
+        dos.Checked = false;
+        Verificar(!g.Visible && Campo<Label>(form, "lblTituloIntegral").Text == "Integral aproximada", "Restaurar modo de una funcion");
+        f.Text = "-x-1";
+        Campo<TextBox>(form, "txtXi").Text = "0";
+        Campo<TextBox>(form, "txtXd").Text = "2";
+        Invocar(form, "Calcular");
+        Cerca(Campo<ResultadoIntegracion>(form, "resultado").Integral, -4, 1e-12, "Preservar signo en el modo de una funcion");
+        VerificarGrafico(form, carpeta, "una-funcion-restaurada.png");
+        Verificar(Ejecutar(navegador, "!ggbApplet.exists('segundaCurva') && document.getElementById('leyendaSegunda').hidden") == "true", "Retirar la segunda curva al desactivar");
+    }
+
     private static void ProbarMenu()
     {
         using (AnalisisNumericoWeb.Form1 menu = new AnalisisNumericoWeb.Form1())
@@ -370,14 +474,14 @@ internal static class Unidad4Tests
         return null;
     }
 
-    private static void VerificarGrafico(Form form, string carpeta, string archivo)
+    private static void VerificarGrafico(Form form, string carpeta, string archivo, bool dosFunciones = false)
     {
         WebView2 navegador = Navegador(form);
         Control grafico = Campo<Control>(form, "grafico");
         Console.WriteLine("Verificando GeoGebra: " + archivo);
         Esperar(() => navegador.CoreWebView2 != null, "Inicializar WebView2");
         Esperar(() => Campo<string>(grafico, "datosEnviados") == Campo<string>(grafico, "datosPendientes")
-            && Ejecutar(navegador, "window.geoGebraListo === true && ggbApplet.exists('curva') && ggbApplet.exists('aproximacion') && document.getElementById('estado').hidden") == "true",
+            && Ejecutar(navegador, "window.geoGebraListo === true && ggbApplet.exists('curva') && ggbApplet.exists('" + (dosFunciones ? "segundaCurva" : "aproximacion") + "') && document.getElementById('estado').hidden") == "true",
             "Cargar GeoGebra y mostrar funcion e integral", 70000);
         Esperar(() => Ejecutar(navegador, "(() => { const a=document.getElementById('grafico').getBoundingClientRect(), c=document.querySelector('canvas').getBoundingClientRect(); return Math.abs(a.width-c.width)<=2 && Math.abs(a.height-c.height)<=2; })()") == "true",
             "El plano ocupa todo el panel");

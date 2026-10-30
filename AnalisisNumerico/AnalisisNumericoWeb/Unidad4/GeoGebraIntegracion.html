@@ -9,6 +9,8 @@
         #leyenda { height: 36px; display: flex; align-items: center; gap: 16px; padding: 0 4px; box-sizing: border-box; font-size: 12px; color: #59414b; }
         #leyenda span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
         .curva { width: 22px; border-top: 2px solid #1e8c7d; }
+        .segunda { width: 22px; border-top: 2px solid #c85a82; }
+        .area { width: 18px; height: 10px; background: #f4dce5; border: 1px solid #c85a82; }
         .aproximacion { width: 22px; border-top: 2px dashed #c85a82; }
         [hidden] { display: none !important; }
         #grafico { position: absolute; top: 36px; bottom: 0; left: 0; right: 0; overflow: hidden; }
@@ -17,7 +19,7 @@
     </style>
 </head>
 <body>
-    <div id="leyenda"><span><i class="curva"></i><span id="etiquetaCurva">f(x)</span></span><span><i class="aproximacion"></i>Aproximacion</span></div>
+    <div id="leyenda"><span><i class="curva"></i><span id="etiquetaCurva">f(x)</span></span><span id="leyendaSegunda" hidden><i class="segunda"></i>g(x)</span><span id="leyendaAproximacion"><i class="aproximacion"></i>Aproximacion</span><span id="leyendaArea" hidden><i class="area"></i>Area entre curvas</span></div>
     <div id="grafico"><div id="ggb-element"></div></div>
     <div id="estado" role="status"><p id="mensaje">Cargando GeoGebra...</p><button id="reintentar" type="button" hidden>Reintentar</button></div>
     <script>
@@ -72,6 +74,33 @@
             return regiones;
         }
 
+        function separarEntreCurvas(primera, segunda) {
+            const regiones = [];
+            let tramoF = [primera[0]], tramoG = [segunda[0]];
+            function guardar() {
+                if (tramoF.some((p, i) => p[1] !== tramoG[i][1]))
+                    regiones.push([...tramoF, ...tramoG.slice().reverse()]);
+            }
+            for (let i = 1; i < primera.length; i++) {
+                const anterior = primera[i - 1][1] - segunda[i - 1][1];
+                const actual = primera[i][1] - segunda[i][1];
+                if (Math.sign(anterior) * Math.sign(actual) < 0) {
+                    const escala = Math.max(Math.abs(anterior), Math.abs(actual));
+                    const t = Math.abs(anterior / escala) / (Math.abs(anterior / escala) + Math.abs(actual / escala));
+                    const x = primera[i - 1][0] + (primera[i][0] - primera[i - 1][0]) * t;
+                    const yF = primera[i - 1][1] * (1 - t) + primera[i][1] * t;
+                    const yG = segunda[i - 1][1] * (1 - t) + segunda[i][1] * t;
+                    const cruce = [x, yF / 2 + yG / 2];
+                    tramoF.push(cruce); tramoG.push(cruce); guardar();
+                    tramoF = [cruce]; tramoG = [cruce];
+                }
+                tramoF.push(primera[i]); tramoG.push(segunda[i]);
+                if (actual === 0) { guardar(); tramoF = [primera[i]]; tramoG = [segunda[i]]; }
+            }
+            guardar();
+            return regiones;
+        }
+
         function aplicarDatos() {
             if (!api) return;
             api.setRepaintingActive(false);
@@ -79,11 +108,17 @@
                 api.newConstruction();
                 api.setAxesVisible(true, true); api.setGridVisible(true); api.setAxisLabels(1, "x", "y", "");
                 const visibles = new Set();
+                const entreCurvas = !!(datosPendientes && datosPendientes.entreCurvas);
+                document.getElementById("leyendaSegunda").hidden = !entreCurvas;
+                document.getElementById("leyendaArea").hidden = !entreCurvas;
+                document.getElementById("leyendaAproximacion").hidden = entreCurvas;
                 document.getElementById("etiquetaCurva").textContent = datosPendientes && datosPendientes.esTabla ? "Datos tabulados" : "f(x)";
                 if (datosPendientes) {
-                    separarRegiones(datosPendientes.aproximacion).forEach(function (tramo, indice) {
+                    const regiones = entreCurvas ? separarEntreCurvas(datosPendientes.curva, datosPendientes.segundaCurva)
+                        : separarRegiones(datosPendientes.aproximacion).map(tramo => [[tramo[0][0], 0], ...tramo, [tramo[tramo.length - 1][0], 0]]);
+                    regiones.forEach(function (region, indice) {
                         const nombre = "region" + indice;
-                        const vertices = [[tramo[0][0], 0], ...tramo, [tramo[tramo.length - 1][0], 0]]
+                        const vertices = region
                             .filter((p, i, a) => i === 0 || p[0] !== a[i - 1][0] || p[1] !== a[i - 1][1]);
                         if (vertices.length > 1 && vertices[0][0] === vertices[vertices.length - 1][0]
                             && vertices[0][1] === vertices[vertices.length - 1][1]) vertices.pop();
@@ -107,10 +142,16 @@
                     // La curva representa la funcion o los datos cargados, segun el modo de entrada.
                     crear("curva", "Polyline(" + lista(datosPendientes.curva) + ")");
                     api.setColor("curva", 30, 140, 125); api.setLineThickness("curva", 5); api.setLayer("curva", 2);
-                    crear("aproximacion", "Polyline(" + lista(datosPendientes.aproximacion) + ")");
-                    api.setColor("aproximacion", 200, 90, 130); api.setLineThickness("aproximacion", 3);
-                    api.setLineStyle("aproximacion", 1); api.setLayer("aproximacion", 1);
-                    visibles.add("curva"); visibles.add("aproximacion");
+                    if (entreCurvas) {
+                        crear("segundaCurva", "Polyline(" + lista(datosPendientes.segundaCurva) + ")");
+                        api.setColor("segundaCurva", 200, 90, 130); api.setLineThickness("segundaCurva", 5);
+                        api.setLayer("segundaCurva", 2); visibles.add("segundaCurva");
+                    } else {
+                        crear("aproximacion", "Polyline(" + lista(datosPendientes.aproximacion) + ")");
+                        api.setColor("aproximacion", 200, 90, 130); api.setLineThickness("aproximacion", 3);
+                        api.setLineStyle("aproximacion", 1); api.setLayer("aproximacion", 1); visibles.add("aproximacion");
+                    }
+                    visibles.add("curva");
                     api.setCoordSystem.apply(api, datosPendientes.limites);
                 } else api.setCoordSystem(-5, 5, -5, 5);
                 api.getAllObjectNames().forEach(function (nombre) {
